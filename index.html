@@ -261,7 +261,10 @@ table.ref td:first-child{font-weight:700}
 @media(max-width:640px){.m3d{height:520px}.m3d-log{width:auto;right:auto;max-width:calc(100% - 20px)}.m3d-log ol{display:none}.m3d-log.min ol{display:block}.m3d-hint,.m3d-tools [data-t=spin]{display:none}.m3d-tools{left:10px;justify-content:flex-start}.m3d-tools button{padding:5px 9px;min-height:34px}.m3d-pop{width:auto;right:10px}.m3d-pop:not([hidden])~.m3d-log{display:none}}
 
 nav a[hidden]{display:none!important}
-.authbox{margin-inline-start:auto;display:flex;align-items:center;gap:8px;font-size:14px}.authbox em{font-style:normal;background:#f2c14e;color:#14532d;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700;margin-left:4px}
+.authbox{margin-inline-start:auto;display:flex;align-items:center;gap:8px;font-size:14px}.authbox .bell{position:relative;display:inline-flex;align-items:center;gap:6px;background:#d62839;color:#fff;text-decoration:none;border-radius:999px;padding:6px 12px;font-weight:700;animation:ring 2.4s ease-in-out infinite}.authbox .bell span{font-weight:500;font-size:13px}.authbox .bell::after{content:'';position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:#f2c14e;border:2px solid #14532d}
+@keyframes ring{0%,100%{transform:none}5%,15%{transform:rotate(-6deg)}10%,20%{transform:rotate(6deg)}25%{transform:none}}
+@media(max-width:640px){.authbox .bell span{display:none}}
+.authbox em{font-style:normal;background:#f2c14e;color:#14532d;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700;margin-left:4px}
 .authbox button{background:#fff;color:#14532d;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;min-height:38px}
 .view.locked>*:not(h1):not(.gate){display:none!important}
 .gate[hidden]{display:none}.claim{max-width:620px;margin:18px 0;padding:22px;border:2px solid #c8102e;border-radius:18px;background:light-dark(#fff8f8,#2a1416);display:grid;gap:12px}.claim h2{margin:0}.claim p{margin:0}
@@ -522,8 +525,13 @@ const thumb=i=>{const c=cat(i.cat);return '<div class="thumb" style="background:
 let INT=new Set();if(!CLOUDMODE)try{INT=new Set(JSON.parse(localStorage.getItem('etu-interest')||'[]'))}catch(e){}
 const askBtn=(i,sm)=>'<button type="button" class="btn sm'+(INT.has(i.id)?' ghost on':'')+'" data-ask="'+esc(i.id)+'" aria-pressed="'+INT.has(i.id)+'">'+(INT.has(i.id)?(sm?'✓ 已通知':'✓ 已通知賣家'):'我有興趣')+'</button>';
 let askNote='';
+function gmailLink(i){const body=i.seller+' 你好：\n\n我在聖誕易圖洽辦公室市集看到你上架的「'+i.title+'」，很有興趣！\n方便的話，什麼時候可以到你的座位（'+i.seat+'）看看呢？\n\n'+(USER?USER.name:'');
+  return 'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(i.sellerEmail)+'&su='+encodeURIComponent('【聖誕市集】我對你的「'+i.title+'」有興趣')+'&body='+encodeURIComponent(body)}
 function ask(id){const i=items.find(x=>x.id===id);if(!i)return;
-  if(CLOUDMODE){if(!window.CLOUD)return toast('雲端還在連線中，請稍候再試。');const on=!INT.has(id);CLOUD.setInterest(i,on).then(ok=>{if(!ok)return;askNote=on?'已通知 '+i.seller+'：你對「'+i.title+'」有興趣，系統會寄 Email 給賣家。':'已取消對「'+i.title+'」的興趣。';if(on)INT.add(id);else INT.delete(id);toast(askNote);drawList();if(st.seat)render()});return}
+  if(CLOUDMODE){if(!window.CLOUD)return toast('雲端還在連線中，請稍候再試。');const on=!INT.has(id);
+    // 要在點擊當下就開新分頁，瀏覽器才不會擋；只有登入、不是自己的商品、而且知道賣家信箱時才開
+    let win=null;if(on&&USER&&i.sellerEmail&&i.sellerUid!==USER.uid){win=window.open(gmailLink(i),'_blank')}
+    CLOUD.setInterest(i,on).then(ok=>{if(!ok){if(win)win.close();return}askNote=on?'已通知 '+i.seller+'，對方會在「我的攤位」看到'+(win?'；也幫你開好寄給對方的 Gmail，確認內容後按傳送就好。':(i.sellerEmail?'。如果 Gmail 沒有自動開啟，請允許這個網站開啟彈出視窗。':'。')):'已取消對「'+i.title+'」的興趣。';if(on)INT.add(id);else INT.delete(id);toast(askNote);drawList();if(st.seat)render()});return}
   if(INT.has(id)){INT.delete(id);askNote='已取消對「'+i.title+'」的興趣。'}else{INT.add(id);askNote='已通知 '+i.seller+'：你對「'+i.title+'」有興趣。正式版會自動寄 Email 給賣家。'}
   try{localStorage.setItem('etu-interest',JSON.stringify([...INT]))}catch(e){}
   drawList();if(st.seat)render()}
@@ -966,7 +974,8 @@ let toastT=0;function toast(m){const t=document.getElementById('toast');t.textCo
 function gate(){
   const ab=document.getElementById('authbox');
   if(!CLOUDMODE){ab.hidden=true;return}
-  ab.hidden=false;ab.innerHTML=USER?'<span>'+esc(USER.name)+(ADMIN?' <em>管理員</em>':'')+'</span><button type="button" data-logout>登出</button>':'<button type="button" data-login>登入</button>';
+  const nInt=Object.values(INTBY).reduce((a,v)=>a+v.length,0);
+  ab.hidden=false;ab.innerHTML=USER?(nInt?'<a class="bell" href="#sell" title="有人對你的商品有興趣">🔔 <b>'+nInt+'</b><span>有人對你的商品有興趣</span></a>':'')+'<span>'+esc(USER.name)+(ADMIN?' <em>管理員</em>':'')+'</span><button type="button" data-logout>登出</button>':'<button type="button" data-login>登入</button>';
   document.querySelector('nav a[data-v=list]').hidden=!ADMIN;
   drawClaim();
   for(const b of document.querySelectorAll('[data-local]'))b.style.display='none';
@@ -1003,7 +1012,9 @@ Object.assign(window.MKT,{toast,
   setItems(arr){for(const x of arr)x.mine=!!USER&&x.sellerUid===USER.uid;items=arr;refreshAll()},
   setNames(m){NAMES=m;for(const d of DEPS)for(const t of d.seats)t.name=m[t.id]||t.orig;refreshAll()},
   setGroup(arr,meta){if(arr)GS.items=arr;if(meta)GS.meta=meta;drawList2()},
-  setInterests(set,by){INT=new Set(set);INTBY=by||{};refreshAll()},
+  setInterests(set,by){INT=new Set(set);const old=INTBY;INTBY=by||{};
+    if(window.__intInit){for(const id in INTBY){const was=old[id]||[];for(const n of INTBY[id])if(!was.includes(n)){const it=items.find(x=>x.id===id);toast('🔔 '+n+' 對你的「'+(it?it.title:'商品')+'」有興趣！到「我的攤位」看看')}}}
+    window.__intInit=!!USER;gate();refreshAll()},
   setUser(u,admin){USER=u;ADMIN=!!admin;if(!u)MYSEAT=undefined;for(const x of items)x.mine=!!USER&&x.sellerUid===USER.uid;
     if(u&&!rf.elements.owner.value)rf.elements.owner.value=u.name;gate();refreshAll()},
   setPeople(list){PEOPLE=list;if(window.M3D&&M3D.people)M3D.people(list);if(!st.dep&&document.getElementById('v-map').classList.contains('on'))renderPanel()},

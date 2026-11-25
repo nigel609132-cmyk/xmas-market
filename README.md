@@ -21,7 +21,7 @@
 - `js/cloud.js`：Firebase 資料同步、登入、我有興趣、即時在線
 - `js/office3d.js`：點進辦公室後的 3D 微縮模型（three.js）
 - `firestore.rules`、`database.rules.json`：安全規則
-- `functions/`：有人按「我有興趣」時自動寄 Email 給賣家（需要 Blaze 方案）
+- `functions/`：（選用，目前未部署）自動寄 Email 給賣家，需要 Blaze 方案。現在的做法是：賣家右上角出現 🔔 通知，買家按「我有興趣」時會開好寄給賣家的 Gmail 草稿
 
 `js/config.js` 裡的 `firebase` 改成 `null` 時，網站會變成本機模式：資料只存在各自的瀏覽器，跟原型一樣，方便離線展示。
 
