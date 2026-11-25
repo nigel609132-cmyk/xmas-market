@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>聖誕易圖洽辦公室市集</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* VOICE: friendly office flea market, lively but tidy, like a shipped intranet product
+   IDEA: a toy diorama of the office floor where desks grow striped market awnings
+   PICTURE: isometric SVG floor -> department -> desks, stalls marked with coral awnings and pins
+   COLOUR and TYPE: snowy white ground, pine #14532d dominant band, holly red #d62839 stalls, gold #f2c14e accent; Noto Sans TC
+   LAYOUT: top nav, map + side panel (stacks under 900px), market grid, one-column sell form */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#12141c);--ink:light-dark(#151826,#eef0f7);--mute:light-dark(#5b6075,#a3a8bd);--line:light-dark(#e3e6ef,#2a2e3d);--card:light-dark(#ffffff,#1a1d28);--soft:light-dark(#f2f4fa,#1e2230);--blue:#14532d;--coral:#d62839;--sun:#f2c14e;--floor:light-dark(#e8ebf4,#262a39);--floorS:light-dark(#c9cee0,#1b1e2a)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans TC",system-ui,sans-serif;overflow-x:clip}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+header{position:relative;overflow:hidden;background:var(--blue);color:#fff;padding:14px max(5vw,16px);display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center}
+.brand{font-weight:900;font-size:22px;letter-spacing:.02em;display:flex;align-items:center;gap:10px}
+.brand svg{flex:none}
+header::before{content:"";position:absolute;inset:-60px 0 0;pointer-events:none;background-image:radial-gradient(circle,#fff 1.4px,transparent 2px),radial-gradient(circle,rgba(255,255,255,.7) 1px,transparent 1.6px);background-size:70px 60px,43px 37px;background-position:0 0,20px 10px;animation:snow 9s linear infinite;opacity:.55}
+header>*{position:relative}
+@keyframes snow{to{background-position:30px 60px,-10px 47px}}
+.lights{height:22px;background:radial-gradient(circle at 12px 13px,#d62839 5px,transparent 6px) 0 0/96px 22px,radial-gradient(circle at 36px 15px,#f2c14e 5px,transparent 6px) 0 0/96px 22px,radial-gradient(circle at 60px 13px,#2fa36b 5px,transparent 6px) 0 0/96px 22px,radial-gradient(circle at 84px 15px,#4aa8ff 5px,transparent 6px) 0 0/96px 22px,linear-gradient(var(--blue),var(--blue)) 0 0/100% 4px no-repeat;animation:twinkle 2.4s steps(2) infinite}
+@keyframes twinkle{50%{filter:brightness(1.35) saturate(1.2)}}
+.stage{background:light-dark(radial-gradient(120% 90% at 15% 0%,#dfeaf7 0%,#eef4f8 45%,#f8fafc 100%),radial-gradient(120% 90% at 15% 0%,#1d2a3a,#141a22))!important}
+#iso,.crumbs,.legend{position:relative;z-index:1}
+.village{position:absolute;inset:0;pointer-events:none;opacity:.55}
+.village>svg{position:absolute;left:0;bottom:0;width:100%;height:62%}
+.village .moon{position:absolute;left:6%;top:9%;width:70px;height:70px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#fffdf3,#f3ead0);box-shadow:0 0 40px 12px rgba(255,244,210,.6)}
+.santa{position:absolute;left:0;top:7%;width:250px;z-index:0;pointer-events:none;animation:fly 22s linear infinite}
+.santa svg{display:block;width:100%;animation:bob 2.4s ease-in-out infinite}
+@keyframes fly{0%{transform:translateX(-260px)}60%{transform:translateX(min(60vw,560px))}60.01%,100%{transform:translateX(-260px)}}
+@keyframes bob{50%{transform:translateY(-8px) rotate(-1.5deg)}}
+@media(prefers-reduced-motion:reduce){.santa,.santa svg{animation:none}.santa{transform:translateX(110px)}}
+#snowfx{z-index:2;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-inline-start:auto}
+nav a{color:#fff;text-decoration:none;padding:10px 16px;border-radius:999px;min-height:44px;display:inline-flex;align-items:center;font-weight:500}
+nav a[aria-current=page]{background:#fff;color:var(--blue)}
+nav a:not([aria-current=page]):hover{background:rgba(255,255,255,.14)}
+main{max-width:1240px;margin:0 auto;padding:24px max(4vw,16px) 48px}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.1;margin:0 0 6px;text-wrap:balance}
+.sub{color:var(--mute);margin:0 0 18px}
+.note{font-size:13px;color:var(--mute)}
+.view{display:none}.view.on{display:block}
+.maprow{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.stage{background:var(--soft);border-radius:20px;position:relative;overflow:hidden}
+.crumbs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:12px 14px 0;font-size:15px}
+.crumbs button{background:none;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--blue);font-weight:700;min-height:40px}
+:root[data-theme=dark] .crumbs button{color:#9fb2ff}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .crumbs button{color:#9fb2ff}}
+.crumbs button:disabled{color:var(--ink);cursor:default}
+.crumbs span{color:var(--mute)}
+.crumbs .rot{order:2;margin-inline-start:auto;display:flex;gap:6px}
+.crumbs .rot button{width:44px;height:44px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:20px;border-radius:12px;padding:0}
+#iso{display:block;width:100%;height:clamp(360px,58vw,560px)}
+#iso .hit{cursor:pointer}
+#iso .hit:hover .tp,#iso .hit:focus .tp{filter:brightness(1.08)}
+#iso .hit:focus{outline:none}
+#iso .hit:focus .lab rect{stroke:var(--sun);stroke-width:3}
+.fade{animation:pop .45s ease-out}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.pulse{animation:pl 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pl{50%{transform:translateY(-6px)}}
+@media(prefers-reduced-motion:reduce){.fade,.pulse,header::before,.lights{animation:none}}
+.legend{display:flex;flex-wrap:wrap;gap:14px;padding:0 16px 14px;font-size:13px;color:var(--mute)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-inline-end:6px;vertical-align:-1px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px}
+.panel h2{font-size:20px;margin:0 0 4px}
+.panel .who{display:flex;gap:12px;align-items:center;margin:8px 0 14px}
+.av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;flex:none}
+.mini{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.mini b{display:block;font-weight:500}
+.pickbox{margin:26px 0 8px}.pickbox h2{font-size:18px;margin:0 0 4px}
+.price{font-weight:700;white-space:nowrap}
+.swap{color:var(--coral)}
+.thumb{border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:900;overflow:hidden;aspect-ratio:1}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.mini .thumb{font-size:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 18px;border-radius:12px;border:0;background:var(--coral);color:#fff;font-weight:700;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{min-height:36px;padding:0 12px;font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.stats div{background:var(--soft);border-radius:14px;padding:10px 12px}
+.stats b{display:block;font-size:24px;line-height:1.1}
+.stats span{font-size:13px;color:var(--mute)}
+.deplist button{display:flex;width:100%;justify-content:space-between;align-items:center;background:none;border:0;border-top:1px solid var(--line);padding:12px 4px;cursor:pointer;min-height:44px;text-align:start}
+.deplist button:hover{background:var(--soft)}
+.dot{width:12px;height:12px;border-radius:4px;display:inline-block;margin-inline-end:10px;vertical-align:-1px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px;align-items:center}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:0 14px;min-height:40px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.field{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:0 14px;min-height:44px;font-size:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+.card .thumb{border-radius:0;font-size:40px;aspect-ratio:4/3}
+.card .bd{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
+.card h3{font-size:17px;margin:0;line-height:1.3}
+.loc{font-size:13px;color:var(--mute)}
+.tag{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--soft);color:var(--mute);align-self:flex-start}
+.card .ft{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:8px;gap:8px;flex-wrap:wrap}
+.card .fb{display:flex;gap:6px}.card .fb .btn{white-space:nowrap}
+.pa{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.btn.on{color:#14532d;border-color:#14532d}
+#askmsg:empty{display:none}#askmsg{margin:10px 0 0;color:#14532d;font-weight:500}
+.sold{opacity:.55}
+.empty{padding:40px;text-align:center;color:var(--mute);background:var(--soft);border-radius:18px}
+form{max-width:640px;display:grid;gap:16px}
+label{display:grid;gap:6px;font-weight:500}
+label small{font-weight:400;color:var(--mute)}
+form .field{width:100%}
+textarea.field{padding:12px 14px;min-height:96px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg label{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:0 14px;min-height:44px;cursor:pointer;font-weight:400}
+.seg input{accent-color:var(--coral);width:18px;height:18px}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:16px;display:flex;gap:14px;align-items:center;cursor:pointer}
+.drop .thumb{width:84px;flex:none;font-size:13px;background:var(--soft);color:var(--mute);font-weight:500}
+.ok{background:light-dark(#fff3e0,#3a2a12);border-radius:14px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.mine{margin-top:36px}
+.mine h2{font-size:22px;margin:0 0 10px}
+.sellwrap{display:grid;grid-template-columns:minmax(0,640px) minmax(0,1fr);gap:40px}
+@media(max-width:900px){.maprow,.sellwrap{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.two{grid-template-columns:1fr}nav{margin-inline-start:0;width:100%}nav a{flex:1;justify-content:center;padding:10px 8px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card .thumb{font-size:28px}}
+nav{align-items:center}
+nav .grp{font-size:12px;color:rgba(255,255,255,.7);padding:0 4px 0 10px}
+.hero{background:linear-gradient(135deg,#14532d,#1f6f50);color:#fff;border-radius:24px;padding:clamp(22px,4vw,44px);margin-bottom:28px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.9) 1.3px,transparent 2px),radial-gradient(circle,rgba(255,255,255,.5) 1px,transparent 1.5px);background-size:80px 70px,47px 41px;opacity:.35;pointer-events:none}
+.hero>*{position:relative;z-index:1}
+.hero h1{font-size:clamp(34px,5vw,52px);margin:2px 0 8px}
+.eyebrow{margin:0;color:#f2c14e;font-weight:700;font-size:15px}
+.lead{max-width:60ch;margin:0 0 22px;color:rgba(255,255,255,.88)}
+.phases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.phase{display:flex;flex-direction:column;gap:4px;background:#fff;color:#151826;border-radius:18px;padding:18px 20px;text-decoration:none;border-top:6px solid #d62839;transition:transform .15s}
+.phase.p2{border-top-color:#f2c14e}
+.phase:hover{transform:translateY(-2px)}
+.ph-tag{font-size:13px;font-weight:700;color:#d62839}
+.p2 .ph-tag{color:#9a6b00}
+.ph-date{font-size:clamp(30px,4vw,40px);line-height:1.1;font-weight:900}
+.ph-date small{font-size:15px;font-weight:500;color:#5b6075;margin-inline-start:6px}
+.ph-name{font-size:18px;font-weight:700}
+.ph-meta{font-size:14px;color:#5b6075}
+.ph-go{margin-top:6px;font-weight:700;color:#14532d}
+.cols{max-width:860px}
+.cols>div+div{margin-top:8px}
+.flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:6px 0 4px}
+.flow div{background:var(--soft);border-radius:14px;padding:14px}
+.flow b{display:block;color:#14532d;font-size:15px}
+:root[data-theme=dark] .flow b{color:#7fd1a3}
+.flow span{font-size:14px;color:var(--mute)}
+@media(max-width:600px){.flow{grid-template-columns:1fr}}
+.cols h2{font-size:22px;margin:22px 0 8px}
+.cols h2:first-child{margin-top:0}
+.ticks{margin:0;padding:0;list-style:none}
+.ticks li{padding:8px 0 8px 26px;position:relative;border-bottom:1px solid var(--line)}
+.ticks li::before{content:"";position:absolute;left:4px;top:15px;width:10px;height:10px;border-radius:50%;background:#2fa36b}
+.ticks li.no::before{background:#d62839}
+table{border-collapse:collapse;width:100%}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:start;font-size:15px}
+th{font-size:13px;color:var(--mute);font-weight:500}
+.num,td.num{text-align:end;white-space:nowrap}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.timeline b{white-space:nowrap}
+.timeline li.key b{color:#d62839}
+.regwrap{display:grid;grid-template-columns:minmax(0,640px) minmax(0,1fr);gap:32px;align-items:start}
+.flabel{font-weight:500;margin-bottom:6px}
+.seg label.on{border-color:#14532d;background:light-dark(#eaf5ee,#173024)}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400;grid-template-columns:none}
+.check input{width:20px;height:20px;margin-top:2px;accent-color:#14532d;flex:none}
+.check.sm{font-size:14px;margin-top:12px}
+.gcard{border:2px solid #c8102e;border-radius:16px;padding:14px 16px 10px;margin:6px 0 4px;background:light-dark(#fff5f5,#2a1416)}
+.gcard legend{font-weight:700;font-size:17px;padding:0 6px;color:light-dark(#9b0c22,#ff8a96)}
+.gcard .gstate{margin:0 0 10px;font-size:14px;font-weight:500}
+.gcard .gstate.ok{color:light-dark(#14532d,#7fd6a0)}.gcard .gstate.no{color:light-dark(#8a5a00,#f0c060)}
+.gopts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gopts label{display:flex;gap:10px;align-items:flex-start;border:2px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;font-weight:400;background:var(--card,transparent)}
+.gopts input{width:22px;height:22px;margin-top:1px;accent-color:#c8102e;flex:none}
+.gopts b{display:block;font-size:17px}.gopts small{display:block;color:var(--muted,#666);font-size:13px;margin-top:2px}
+.gopts label:has(input:checked){border-color:#c8102e;background:light-dark(#ffe9ec,#3a1a1e)}
+.gopts label:has(input:disabled){opacity:.5;cursor:not-allowed}
+@media(max-width:560px){.gopts{grid-template-columns:1fr}}
+.formbtns{display:flex;gap:10px;flex-wrap:wrap}
+.err{color:#d62839;font-size:14px;font-weight:500}
+.field.bad{border-color:#d62839}
+.co2card{position:sticky;top:16px;background:linear-gradient(160deg,#14532d,#1f6f50);color:#fff;border-radius:22px;padding:22px}
+.co2card .field{background:#fff;color:#151826}
+.co2card label{color:#fff}
+.co2k{margin:0;font-weight:700;color:#f2c14e}
+.co2v{margin:2px 0 6px;display:flex;align-items:baseline;gap:8px}
+.co2v b{font-size:clamp(44px,6vw,64px);line-height:1}
+.co2why{margin:0 0 10px;color:rgba(255,255,255,.85);font-size:15px}
+.co2card input[type=range]{width:100%;accent-color:#f2c14e;height:28px}
+.rng{display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,.75)}
+.co2sum{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.25);font-size:15px}
+.co2sum b{font-size:20px}
+.cobar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.cobar .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.cobar .stat b{display:block;font-size:26px;line-height:1.2}
+.cobar .stat span{font-size:13px;color:var(--mute)}
+.cobar .meter{height:6px;border-radius:3px;background:var(--soft);margin-top:8px;overflow:hidden}.cobar .meter i{display:block;height:100%;background:#2fa36b}
+.field.fixed{display:flex;align-items:center;background:var(--soft)}
+.cob{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;text-align:start}
+.cob[aria-pressed=true]{border-color:#14532d;box-shadow:0 0 0 2px #14532d inset}
+.cob b{display:block;font-size:15px}
+.cob .meter{height:6px;border-radius:3px;background:var(--soft);margin:8px 0 6px;overflow:hidden}
+.cob .meter i{display:block;height:100%;background:#2fa36b}
+.cob span{font-size:13px;color:var(--mute)}
+.list td .btn{min-height:34px}
+.backup{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:20px;padding:14px;background:var(--soft);border-radius:14px}
+.backup .loc{flex:1 1 280px}
+table.ref td:first-child{font-weight:700}
+@media(max-width:900px){.regwrap,.cols{grid-template-columns:minmax(0,1fr)}.co2card{position:static}}
+@media(max-width:600px){table.list thead{display:none}table.list tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line)}table.list td{border:0;padding:2px 0;text-align:start}table.list td::before{content:attr(data-l);display:block;font-size:12px;color:var(--mute)}table.list td:nth-child(2),table.list td:last-child{grid-column:1/-1}table.list td[colspan]{grid-column:1/-1}.phases{grid-template-columns:1fr}.cobar{grid-template-columns:repeat(2,minmax(0,1fr))}nav .grp{width:100%;padding:4px 0 0}}
+
+.m3d{display:none;position:relative;height:clamp(440px,60vw,640px);margin-top:4px;background:radial-gradient(120% 100% at 30% 0%,#fff6e8 0%,#f7e5cd 55%,#efd6b6 100%);overflow:hidden;color:#3b2a1a}
+.stage.is3d .m3d{display:block}
+.stage.is3d #iso,.stage.is3d .village,.stage.is3d #snowfx,.stage.is3d .legend{display:none}
+.m3d canvas{display:block;touch-action:none}
+.m3d-labels{position:absolute;inset:0;pointer-events:none;z-index:1}
+.m3d .dl{pointer-events:auto;cursor:pointer;background:#fffaf2;border:1px solid #e6d3b8;border-radius:12px;padding:4px 10px;text-align:center;box-shadow:0 3px 0 #e2c9a6;font-size:12px;line-height:1.3;color:#5a3d22}
+.m3d .dl b{display:block;font-size:13px}.m3d .dl span{color:#c8283a;font-weight:700}
+.m3d .dl.hov,.m3d .dl:hover{border-color:#c8283a;box-shadow:0 3px 0 #c8283a}
+.m3d .r3{font-size:11px;color:#8a6a4a;background:rgba(255,250,242,.85);padding:1px 6px;border-radius:6px;white-space:nowrap}
+.m3d .nt{font-size:11px;font-weight:700;color:#3b2a1a;background:#fffaf2;border:1px solid #e2cfb5;border-radius:6px;padding:0 5px;white-space:nowrap}
+.m3d .nt.v{opacity:.55}
+.m3d .wk{font-size:11px;font-weight:700;color:#fff;background:#3b6fb6;border-radius:6px;padding:1px 6px;white-space:nowrap}.m3d .wk.anon{background:#8a8f9c}
+.m3d .pin3d{pointer-events:auto;cursor:pointer;display:flex;align-items:center;gap:5px;background:#c8283a;color:#fff;border:2px solid #fff;border-radius:999px;padding:2px 10px 2px 3px;font-size:12px;font-weight:700;box-shadow:0 4px 10px rgba(120,30,20,.3);white-space:nowrap;animation:bob3 2.2s ease-in-out infinite}
+.m3d .pin3d::after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-6px;border:6px solid transparent;border-top-color:#c8283a}
+.m3d .pin3d .pc{background:#fff;color:#c8283a;border-radius:50%;min-width:20px;height:20px;display:grid;place-items:center}
+.m3d .pin3d:hover{background:#a51d2d}
+@keyframes bob3{50%{translate:0 -5px}}
+@media (prefers-reduced-motion:reduce){.m3d .pin3d{animation:none}}
+.m3d-tools{position:absolute;top:10px;right:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;z-index:3}
+.m3d-tools button{background:#fffaf2;border:1px solid #e2cfb5;border-radius:10px;padding:6px 11px;font:inherit;font-size:13px;font-weight:700;color:#5a3d22;box-shadow:0 2px 0 #e2c9a6;min-height:36px;cursor:pointer}
+.m3d-tools button[aria-pressed=true]{background:#c8283a;border-color:#c8283a;color:#fff;box-shadow:0 2px 0 #8f1a28}
+.m3d-pop{position:absolute;left:0;top:0;width:270px;background:#fffaf2;border:1px solid #e6d3b8;border-radius:16px;box-shadow:0 14px 32px rgba(90,50,20,.25);padding:12px;z-index:4;color:#2b1d10;font-size:13px}
+.m3d-pop .x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:20px;cursor:pointer;color:#8a6a4a;width:32px;height:32px}
+.m3d-pop .ph{display:flex;gap:10px;align-items:center;margin:0 26px 8px 0}.m3d-pop .ph span,.m3d-pop .pi span{display:block;color:#8a6a4a;font-size:12px}
+.m3d-pop .av{width:38px;height:38px}
+.m3d-pop .pi{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-top:1px dashed #e6d3b8}
+.m3d-pop .pi b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m3d-pop .thumb{width:40px;height:40px;border-radius:10px;font-size:12px;aspect-ratio:1}
+.m3d-pop .pa{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.m3d-pop .pa .btn{min-height:30px;padding:3px 10px;font-size:12px}
+.m3d-pop .more,.m3d-pop .hint{margin:6px 0 0;color:#8a6a4a;font-size:12px}
+.m3d-tip{position:absolute;left:0;top:0;pointer-events:none;background:#2b1d10;color:#fff;font-size:12px;padding:4px 8px;border-radius:8px;z-index:5;white-space:nowrap}
+.m3d-log{position:absolute;left:10px;bottom:10px;width:260px;background:rgba(255,250,242,.94);border:1px solid #e6d3b8;border-radius:14px;padding:8px 10px;font-size:12px;z-index:3}
+.m3d-log .lh{display:flex;align-items:center;gap:8px}.m3d-log .lt{margin-left:auto;border:0;background:none;font-size:16px;cursor:pointer;color:#8a6a4a;width:28px;height:28px}
+.m3d-log .live{background:#c8283a;color:#fff;font-size:10px;font-weight:700;border-radius:5px;padding:1px 5px;letter-spacing:.05em}
+.m3d-log .live::before{content:"● ";animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.2}}
+.m3d-log ol{list-style:none;margin:6px 0 0;padding:0}.m3d-log li{padding:5px 0;border-top:1px dashed #e6d3b8;cursor:pointer}.m3d-log li:hover b{color:#c8283a}
+.m3d-log li span{display:block;color:#8a6a4a}
+.m3d-log.min ol{display:none}
+.m3d-hint{position:absolute;right:10px;bottom:10px;font-size:12px;color:#8a6a4a;background:rgba(255,250,242,.85);padding:4px 8px;border-radius:8px;z-index:3}
+@media(max-width:640px){.m3d{height:520px}.m3d-log{width:auto;right:auto;max-width:calc(100% - 20px)}.m3d-log ol{display:none}.m3d-log.min ol{display:block}.m3d-hint,.m3d-tools [data-t=spin]{display:none}.m3d-tools{left:10px;justify-content:flex-start}.m3d-tools button{padding:5px 9px;min-height:34px}.m3d-pop{width:auto;right:10px}.m3d-pop:not([hidden])~.m3d-log{display:none}}
+
+nav a[hidden]{display:none!important}
+.authbox{display:flex;align-items:center;gap:8px;font-size:14px}.authbox em{font-style:normal;background:#f2c14e;color:#14532d;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700;margin-left:4px}
+.authbox button{background:#fff;color:#14532d;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;min-height:38px}
+.view.locked>*:not(h1):not(.gate){display:none!important}
+.gate[hidden]{display:none}.gate{max-width:560px;margin:18px 0;padding:22px;border:1px solid var(--line);border-radius:18px;background:var(--card)}.gate b{font-size:18px}.gate p{color:var(--mute);margin:6px 0 14px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#14532d;color:#fff;padding:12px 18px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:99;max-width:min(560px,calc(100% - 32px));font-weight:500}
+.online{display:flex;align-items:center;gap:6px;margin:0 0 10px}.online i{width:8px;height:8px;border-radius:50%;background:#2fa36b;box-shadow:0 0 0 3px rgba(47,163,107,.2)}
+.intby{color:#d62839}
+</style>
+<script defer src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+</head>
+<body>
+<header>
+  <div class="brand"><svg width="30" height="32" viewBox="0 0 30 32" aria-hidden="true"><path d="M15 2l2 4h-4z" fill="#f2c14e"/><path d="M15 5 7 15h4l-6 8h5l-6 6h22l-6-6h5l-6-8h4z" fill="#3fbf7f"/><rect x="13" y="29" width="4" height="3" fill="#8a5a2b"/><circle cx="12" cy="14" r="1.4" fill="#d62839"/><circle cx="18" cy="19" r="1.4" fill="#f2c14e"/><circle cx="11" cy="24" r="1.4" fill="#fff"/><circle cx="20" cy="26" r="1.4" fill="#d62839"/></svg>聖誕易圖洽辦公室市集</div>
+  <nav aria-label="主選單">
+    <span class="grp">12/21 集團</span>
+    <a href="#home" data-v="home">活動介紹</a>
+    <a href="#register" data-v="register">好物登記</a>
+    <a href="#list" data-v="list">選品清冊</a>
+    <span class="grp">12/22–24 易圖</span>
+    <a href="#map" data-v="map">空間地圖</a>
+    <a href="#shop" data-v="shop">逛賣場</a>
+    <a href="#sell" data-v="sell">我要上架</a>
+  </nav>
+  <div class="authbox" id="authbox" hidden></div>
+</header>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="lights" aria-hidden="true"></div>
+<main>
+  <section id="v-home" class="view">
+    <div class="hero">
+      <p class="eyebrow">逢甲GIS中心集團　2026 聖誕永續派對</p>
+      <h1>聖誕好物傳下去</h1>
+      <p class="lead">讓祝福延續、讓地球更健康。把閒置好物變成同事的聖誕禮物，每一件都標示可避免的碳排放。</p>
+      <div class="phases">
+        <a class="phase p1" href="#register">
+          <span class="ph-tag">第一階段 · 集團</span>
+          <b class="ph-date">12/21<small>（一）13:30–16:30</small></b>
+          <span class="ph-name">GIS中心聖誕二手好物市集</span>
+          <span class="ph-meta">登陽 ICC 22 樓交誼廳 · 五家子公司各 20 件，共 100 件 · 每件 5–100 元</span>
+          <span class="ph-go">前往好物登記 ›</span>
+        </a>
+        <a class="phase p2" href="#map">
+          <span class="ph-tag">第二階段 · 易圖</span>
+          <b class="ph-date">12/22–24<small>（二至四）</small></b>
+          <span class="ph-name">聖誕易圖洽辦公室市集</span>
+          <span class="ph-meta">商學大樓 6F · 走到同事的座位逛攤位</span>
+          <span class="ph-go">打開辦公室地圖 ›</span>
+        </a>
+      </div>
+    </div>
+    <div class="cols">
+      <div>
+        <h2>易圖同仁怎麼參加</h2>
+        <div class="flow">
+          <div><b>1. 在易圖上架</b><span>「我要上架」填好物品，售價 5–100 元（5 的倍數）就能勾選「參加 12/21 集團二手好物市集？」。</span></div>
+          <div><b>2. 12/21 參加集團二手市集</b><span>可以點選「好物登記」或由「我要上架」參加 12/21 集團二手好物市集，請填答相關資料，確認 20 個選品名單後會通知賣家，再請賣家把商品交給乃皜。</span></div>
+          <div><b>3. 沒賣出就回座位</b><span>12/21 沒賣掉的，12/22–24 自動回到你座位上的易圖攤位繼續賣。</span></div>
+        </div>
+        <h2>活動目的</h2>
+        <ul class="ticks">
+          <li><b>延續聖誕精神</b>：把「分享與祝福」轉化為「物品再利用」。</li>
+          <li><b>倡議循環經濟</b>：讓閒置物品找到新主人，減少新品購買與廢棄物。</li>
+          <li><b>具體化減碳成果</b>：每件標示預估碳排放量，活動後統計集團整體減碳量，納入 ESG 永續揭露。</li>
+          <li><b>促進跨公司交流</b>：天擘、天眼、天思、準線、易圖五家子公司同仁共同參與。</li>
+        </ul>
+        <h2>選品規範</h2>
+        <ul class="ticks">
+          <li><b>可收品項</b>：小家電、書籍、未拆封禮品、生活雜品、文具、玩具等閒置小物。</li>
+          <li><b>品質</b>：8 成新以上、功能正常、外觀清潔；小家電收件時須通電測試。</li>
+          <li class="no"><b>不收</b>：貼身衣物、食品與保健品、過期或即期商品、藥品、已開封化妝品、刀具等危險物品、盜版或仿冒品、大型家具。</li>
+          <li><b>商品編號</b>：天擘 A01–A50、天眼 B01–B50、天思 C01–C50、準線 D01–D50、易圖 E01–E50。</li>
+        </ul>
+        <h2>交易方式</h2>
+        <ul class="ticks">
+          <li>現金交易為主，先拿先得、不預留、不議價；熱門商品一人限購一件。</li>
+          <li>16:00 起「聖誕最後優惠」，16:20 公布售出件數與累計減碳量。</li>
+          <li>未售出商品依登記選擇處理：退還本人（12/28 前領回，逾期視同捐贈），或聖誕送暖捐贈。</li>
+        </ul>
+      </div>
+      <div>
+        <h2>定價與碳排參考</h2>
+        <p class="loc">售價一律 5–100 元，以 5 元為級距。碳排為購買同等新品的碳排放，也就是二手再利用可避免的量；查無官方碳足跡資料時採下表建議值。</p>
+        <div class="scroll"><table class="ref">
+          <thead><tr><th>類別</th><th>建議售價</th><th>碳排區間</th><th>建議標示值</th></tr></thead>
+          <tbody id="reftable"></tbody>
+        </table></div>
+        <p class="note">碳排值為附件四依產品碳足跡文獻整理之約略值，僅供內部倡議估算；未拆封禮品依實際品項歸入相近類別。</p>
+      </div>
+    </div>
+  </section>
+  <section id="v-register" class="view">
+    <h1>好物登記</h1>
+    <p class="sub">易圖同仁的好物依附件一「商品選品登記表」填寫，碳排會跟著類別自動算好。</p>
+    <div class="regwrap">
+      <form id="rf" novalidate>
+        <div id="rmsg"></div>
+        <div class="two">
+          <div><div class="flabel">公司別</div><div class="field fixed">易圖（E）</div><select name="co" id="rco" hidden></select></div>
+          <label>商品編號<small>自動帶入下一個空號，可修改</small><input class="field" name="code" id="rcode" required maxlength="3" autocomplete="off"></label>
+        </div>
+        <div class="two">
+          <label>好物主人姓名<input class="field" name="owner" required maxlength="12"></label>
+          <label>部門／分機<input class="field" name="dept" maxlength="20" placeholder="例如：空資處／7555"></label>
+        </div>
+        <label>品名<input class="field" name="name" required maxlength="30" placeholder="例如：快煮壺 1.2L"></label>
+        <div>
+          <div class="flabel">類別</div>
+          <div class="seg" id="rcat"></div>
+        </div>
+        <div class="two" id="rsub"></div>
+        <div class="two">
+          <div><div class="flabel">新舊程度</div><div class="seg" id="rcond"></div></div>
+          <div><div class="flabel">功能檢查</div><div class="seg" id="rfunc"></div></div>
+        </div>
+        <label>售價（新台幣）<small id="phint">5–100 元，以 5 元為級距</small><input class="field" name="price" id="rprice" type="number" min="5" max="100" step="5" inputmode="numeric" required></label>
+        <label>商品說明／瑕疵<textarea class="field" name="desc" maxlength="120" placeholder="例如：使用約一年，外觀有細微刮痕。"></textarea></label>
+        <div><div class="flabel">未售出處理</div><div class="seg" id="runsold"></div></div>
+        <label class="check"><input type="checkbox" name="noban" required> 已確認不是貼身衣物、食品保健品、過期商品、藥品、已開封化妝品、刀具、仿冒品或大型家具</label>
+        <label class="check"><input type="checkbox" name="agree" required> 本人確認物品為本人所有，同意提供於二手好物市集義賣，所得作為公益用途</label>
+        <div class="formbtns"><button class="btn" type="submit" id="rsubmit">登記這件好物</button><button class="btn ghost" type="button" id="rreset">清空</button></div>
+      </form>
+      <aside class="co2card" aria-live="polite">
+        <p class="co2k">預估碳排放量</p>
+        <p class="co2v"><b id="cv">—</b><span>kg CO₂e</span></p>
+        <p class="co2why" id="cwhy">先選類別，這裡會依附件四算出建議標示值。</p>
+        <div id="cadj"></div>
+        <label class="check sm"><input type="checkbox" id="coff"> 我查到官方碳足跡數據（產品碳足跡資訊網或品牌公布）</label>
+        <div id="coffbox" hidden>
+          <div class="two"><label>官方數值（kg CO₂e）<input class="field" id="coffv" type="number" min="0" step="0.1" inputmode="decimal"></label><label>資料來源<input class="field" id="coffs" maxlength="40" placeholder="例如：產品碳足跡資訊網"></label></div>
+        </div>
+        <div class="co2sum" id="csum"></div>
+      </aside>
+    </div>
+  </section>
+  <section id="v-list" class="view">
+    <h1>選品清冊</h1>
+    <p class="sub">易圖的附件二「子公司商品選品清冊」，目標 20 件（可超過，最多 E01–E50 共 50 件），可直接匯出附件一、二、三的 Excel 列印。</p>
+    <div class="cobar" id="cobar"></div>
+    <div class="bar">
+      <select id="lco" class="field" aria-label="公司別" hidden></select>
+      <input id="lrep" class="field" placeholder="負責代表" aria-label="負責代表" maxlength="12">
+      <input id="ldate" class="field" type="date" aria-label="繳交日期">
+      <button class="btn" id="lexport" type="button">匯出 Excel（附件一、二、三）</button>
+    </div>
+    <p class="loc" id="lmsg"></p>
+    <div class="scroll"><table class="list stack" id="ltable"><thead><tr><th>編號</th><th>品名</th><th>類別</th><th>新舊</th><th>好物主人</th><th class="num">售價</th><th class="num">碳排 kg</th><th>未售出</th><th>12/21 結果</th><th></th></tr></thead><tbody></tbody></table></div>
+    <div class="pickbox"><h2>管理員選入：符合條件的易圖上架商品</h2><p class="loc">同仁在易圖上架、售價 5–100 元且為 5 的倍數的商品都列在這裡。按「選入」會帶到好物登記，補好類別就加入 12/21 集團市集；12/21 沒賣出，標記「未售出」就回到原本的攤位。</p><div id="pick"></div></div>
+    <div class="backup" data-local><span class="loc">登記資料只存在這台電腦的瀏覽器裡，記得定期下載備份；換電腦時用「匯入備份」帶過去。</span><button class="btn sm ghost" id="bk-out" type="button">下載備份</button><label class="btn sm ghost" for="bk-in">匯入備份</label><input id="bk-in" type="file" accept=".json,application/json" hidden></div>
+  </section>
+  <section id="v-map" class="view">
+    <h1>聖誕交換季，走到同事的座位逛攤位</h1>
+    <p class="sub">點辦公室走進 3D 微縮模型，擺著聖誕樹和禮物、有紅色標籤的座位就是攤位。</p>
+    <div class="maprow">
+      <div class="stage">
+        <div class="village" id="village" aria-hidden="true"></div>
+        <div class="crumbs" id="crumbs"></div>
+        <svg id="iso" role="img" aria-label="辦公室 2.5D 地圖"></svg><canvas id="snowfx" aria-hidden="true"></canvas>
+        <div class="m3d" id="m3d"><div class="m3d-tools"><button type="button" data-v="home">← 回 6F 樓層</button></div><div class="m3d-pop" id="m3dPop" hidden></div><div class="m3d-tip" id="m3dTip" hidden></div><div class="m3d-log" id="m3dLog"></div><div class="m3d-hint">拖曳旋轉 · 滾輪縮放 · 右鍵平移</div></div>
+        <div class="legend"><span><i style="background:#d62839"></i>有攤位的座位</span><span><i style="background:#ffffff;border:1px solid #b9bfd3"></i>一般座位</span><span><i style="background:#aeb4c6"></i>空位</span><span>點選或用 Tab 鍵切換，Esc 返回上一層</span></div>
+      </div>
+      <aside class="panel" id="panel" aria-live="polite"></aside>
+    </div>
+    <p class="note">樓層與座位依商學大樓 6F 平面配置圖、空資處座位圖（2026/10/19）繪製，為示意比例。座位上的名字取自座位圖，同仁可以在上架時自行修改；標示「示範」的物品為示範資料。</p>
+  </section>
+  <section id="v-shop" class="view">
+    <h1>逛賣場</h1>
+    <p class="sub">所有同事上架中的二手物品，點「去座位」會帶你到地圖上的攤位。</p>
+    <div class="bar">
+      <input id="q" class="field" type="search" placeholder="搜尋物品或賣家" aria-label="搜尋">
+      <select id="fdep" class="field" aria-label="辦公室"></select>
+      <div id="cats" class="bar" style="margin:0"></div>
+    </div>
+    <div id="list" class="grid"></div>
+  </section>
+  <section id="v-sell" class="view">
+    <h1>我要上架</h1>
+    <p class="sub">填好物品資訊，攤位就會出現在你的座位上。</p>
+    <div class="sellwrap">
+      <form id="f" novalidate>
+        <div id="okbox"></div>
+        <label>物品名稱<input class="field" name="title" required maxlength="40" placeholder="例如：九成新機械鍵盤"></label>
+        <div class="two">
+          <label>類別<select class="field" name="cat" id="fcat"></select></label>
+          <label>物況<select class="field" name="cond"><option>全新</option><option selected>九成新</option><option>有使用痕跡</option></select></label>
+        </div>
+        <div>
+          <div style="font-weight:500;margin-bottom:6px">交易方式</div>
+          <div class="seg"><label><input type="radio" name="mode" value="sell" checked>售價</label><label><input type="radio" name="mode" value="swap">交換</label><label><input type="radio" name="mode" value="free">免費送</label></div>
+        </div>
+        <label id="plab">售價（新台幣）<input class="field" name="price" type="number" min="0" step="5" value="50" inputmode="numeric"></label>
+        <fieldset class="gcard" id="gjoin"><legend>🎄 要不要參加 12/21 集團二手好物市集？</legend>
+          <p class="gstate" id="gjoinhint"></p>
+          <div class="gopts"><label><input type="radio" name="joing" value="yes" id="joing"><span><b>參加</b><small>12/21 先在集團市集賣，沒賣出 12/22 起回到我的座位攤位</small></span></label>
+          <label><input type="radio" name="joing" value="no" id="joingno"><span><b>不參加</b><small>只在 12/22–24 易圖座位攤位賣</small></span></label></div>
+          <p class="loc">提醒：符合條件的商品，管理員也可能直接選入 12/21 集團市集。</p></fieldset>
+        <label>說明<small>想交換什麼、何時方便到座位看貨</small><textarea class="field" name="desc" maxlength="300" placeholder="例如：午休 12:30 後都在座位，可以直接來試打。"></textarea></label>
+        <label class="drop" for="photo"><span class="thumb" id="pv">加照片</span><span>點此選擇照片<br><small>照片會自動縮小後儲存</small></span></label>
+        <input id="photo" type="file" accept="image/*" hidden>
+        <div class="two">
+          <label>辦公室<select class="field" name="dep" id="sdep"></select></label>
+          <label>座位<select class="field" name="seat" id="sseat"></select></label>
+        </div>
+        <label>你的名字<small>選座位會帶入座位圖上的名字，可自行修改</small><input class="field" name="seller" required maxlength="12"></label>
+        <div><button class="btn" type="submit">上架到我的攤位</button></div>
+      </form>
+      <div class="mine"><h2>我的攤位</h2><div id="mine"></div></div>
+    </div>
+  </section>
+</main>
+<script src="js/config.js"></script>
+<script>
+{
+const CLOUDMODE=!!(window.APP_CONFIG&&APP_CONFIG.firebase);let USER=null,ADMIN=false,INTBY={},PEOPLE=[];
+const SEATS={"606":[["606-01",2.51,1.81,0,"廷柔"],["606-02",3.76,1.81,0,"筱晴"],["606-03",6.69,1.88,0,"佳薇"],["606-04",10.88,1.88,0,"玉德"],["606-05",13.13,1.89,0,"雅齡"],["606-06",2.03,3.75,1,""],["606-07",4.07,3.84,0,"則宇"],["606-08",6.32,3.82,0,"嘉珉"],["606-09",7.0,3.84,0,"敬翰"],["606-10",9.48,3.82,0,"歆評"],["606-11",10.2,3.82,0,"建森"],["606-12",12.63,3.79,0,"盧志"],["606-13",13.32,3.82,0,"芝伶"],["606-14",15.75,3.74,0,"浿禎"],["606-15",2.03,5.49,1,""],["606-16",4.04,5.49,1,""],["606-17",6.34,5.51,0,"衣淇"],["606-18",7.05,5.52,0,"冠廷"],["606-19",9.54,5.51,0,"品印"],["606-20",10.17,5.51,0,"育如"],["606-21",12.59,5.51,0,"乃皜"],["606-22",13.32,5.52,0,"志展"],["606-23",15.78,5.52,0,"依瑾"]],"614":[["614-01",1.7,1.99,0,"朝棋"],["614-02",3.98,1.97,0,"暐尊"],["614-03",0.34,3.6,0,"亭恩"],["614-04",2.93,3.63,0,"逸平"],["614-05",3.62,3.67,1,""],["614-06",6.24,3.31,0,"泓任"],["614-07",0.34,5.43,0,"芳佑"],["614-08",2.91,5.43,0,"子淮"],["614-09",3.68,5.43,0,"少茜"],["614-10",6.29,5.47,0,"承維"]],"620":[["620-01",4.13,1.21,1,""],["620-02",4.93,1.21,1,""],["620-03",7.52,1.32,0,"羽茜"],["620-04",8.28,1.26,0,"琬馨"],["620-05",10.96,1.17,0,"佳均"],["620-06",4.15,2.47,1,""],["620-07",4.91,2.47,1,""],["620-08",11.76,1.76,0,"玉真"],["620-09",7.54,2.97,0,"偉華"],["620-10",8.28,2.93,0,"柏瑩"],["620-11",10.89,2.93,0,"琬婷"],["620-12",4.93,5.42,0,"璦菱"],["620-13",7.57,5.42,1,""],["620-14",8.32,5.44,0,"珮綺"],["620-15",10.9,5.42,0,"惠羽"],["620-16",4.15,6.3,0,"佩伃"],["620-17",7.57,7.13,1,""],["620-18",8.3,7.11,0,"佳雯"],["620-19",11.69,6.41,0,"靖雅"],["620-20",4.95,7.18,0,"榮浤"],["620-21",10.9,7.15,0,"珮茹"]],"618":[["618-01",6.06,1.39,0,"佑耕"],["618-02",9.27,1.39,0,"銘賢"],["618-03",13.88,1.41,0,"志偉"],["618-04",3.67,3.21,1,""],["618-05",6.19,3.21,1,""],["618-06",6.89,3.21,1,""],["618-07",9.32,3.16,0,"守陽"],["618-08",10.05,3.18,0,"金億"],["618-09",12.57,3.27,0,"冠穎"],["618-10",13.28,3.27,0,"建安"],["618-11",15.76,3.18,0,"弘霖"],["618-12",2.96,4.86,0,"崇恩"],["618-13",6.15,4.89,1,""],["618-14",6.91,4.89,0,"奕洋"],["618-15",9.34,4.88,0,"育萱"],["618-16",10.05,4.89,0,"陳瑋"],["618-17",12.57,4.89,0,"凱鈞"],["618-18",13.28,4.89,0,"冠閔"],["618-19",15.74,4.89,0,"忠晏"]],"604-1":[["604-1-01",1.8,2.9,0,"處長"]]};
+const DEPS=[
+ {id:'606',name:'專管辦公室',color:'#7aa2ff',x:3.6,y:0,w:16.3,d:6.7},
+ {id:'614',name:'SA辦公室',color:'#ffb86b',x:19.9,y:0,w:7.9,d:6.7},
+ {id:'620',name:'創生辦公室',color:'#c9a7ff',x:27.8,y:0,w:13.9,d:8.3},
+ {id:'618',name:'工程師辦公室',color:'#7fd1c3',x:25.5,y:8.3,w:16.2,d:6},
+ {id:'604-1',name:'處長辦公室',color:'#ff9fb0',x:0,y:0,w:3.6,d:5.3}];
+let NAMES={};if(!CLOUDMODE)try{NAMES=JSON.parse(localStorage.getItem('etu-names')||'{}')||{}}catch(e){}
+for(const d of DEPS)d.seats=SEATS[d.id].map(s=>({id:s[0],x:s[1],y:s[2],vacant:!!s[3],name:NAMES[s[0]]||s[4],orig:s[4]}));
+const seatOf=id=>{for(const d of DEPS)for(const t of d.seats)if(t.id===id)return t};
+const nameOf=id=>{const t=seatOf(id);return t&&t.name&&t.name!=='?'?t.name:'座位 '+id};
+const OTHER=[['604','會客室',0,5.3,3.6,3],['602-1','GIS大廳',0,8.3,5.3,6],['608','小研討室',5.3,8.3,5.1,6],['610','圖書室',10.4,8.3,5.3,6],['612','UPS',15.7,8.3,2.1,6],['616','影印室',17.8,8.3,3.9,6],['618-1','機房',21.7,8.3,3.8,6]];
+const CATS=[['3c','3C 周邊','#1f6f50'],['book','書籍','#8b1e2d'],['home','生活用品','#b7791f'],['wear','服飾配件','#d62839'],['toy','玩具收藏','#2a6f97'],['other','其他','#5b6075']];
+const SEED=[
+ ['機械鍵盤 茶軸','3c','sell',800,'小明','606','606-08','用了一年，鍵帽完整，附原廠盒。'],
+ ['27 吋螢幕支架','3c','swap',0,'小明','606','606-08','想換一個人體工學滑鼠。'],
+ ['設計模式 中文版','book','sell',150,'佳穎','606','606-19','有少量鉛筆筆記。'],
+ ['羊毛圍巾','wear','sell',300,'佳穎','606','606-19','灰色，冬天正好用。'],
+ ['Type-C 集線器','3c','free',0,'志豪','614','614-04','多一個用不到，送給需要的人。'],
+ ['樂高小車組','toy','sell',350,'志豪','614','614-04','零件齊全，已拼過一次。'],
+ ['手沖咖啡壺組','home','sell',450,'雅婷','620','620-10','含濾杯與手沖壺，只用過幾次。'],
+ ['繪圖板 S 尺寸','3c','sell',1200,'雅婷','620','620-10','升級新款所以出清。'],
+ ['設計年鑑 2024','book','swap',0,'冠宇','620','620-20','想換任何攝影集。'],
+ ['登山背包 30L','wear','sell',600,'承恩','618','618-09','背過兩次，功能正常。'],
+ ['公仔盲盒 全套','toy','swap',0,'思妤','618','618-16','想換桌遊。'],
+ ['保溫杯 500ml','home','free',0,'怡君','618','618-02','尾牙抽到的，全新未拆。'],
+ ['桌上型小盆栽','home','sell',100,'怡君','618','618-02','好養的多肉，附盆。'],
+ ['兒童書','book','sell',200,'','606','606-03','兒童書一批，歡迎到座位挑選。'],
+ ['合照一張','other','sell',200,'','606','606-12','聖誕限定，到座位跟我合照一張。'],
+ ['Bentley Continental GT','other','sell',500000,'','606','606-08','聖誕特價，歡迎到座位賞車。']];
+let items=CLOUDMODE?[]:SEED.map((s,i)=>({id:'s'+i,title:s[0],cat:s[1],mode:s[2],price:s[3],seller:nameOf(s[6]),dep:s[5],seat:s[6],desc:s[7],cond:'九成新',photo:'',mine:false,sold:false,demo:true}));
+if(!CLOUDMODE)try{const saved=JSON.parse(localStorage.getItem('etu-mine6f')||'[]');if(Array.isArray(saved))items=items.concat(saved.filter(i=>SEATS[i.dep]))}catch(e){}
+const save=()=>{if(CLOUDMODE){if(window.CLOUD)CLOUD.saveItems(items);else toast('雲端還在連線中，請稍候再試。');return}try{localStorage.setItem('etu-mine6f',JSON.stringify(items.filter(i=>i.mine)))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dep=id=>DEPS.find(d=>d.id===id);
+const cat=id=>CATS.find(c=>c[0]===id)||CATS[5];
+const seatIds=d=>d.seats.filter(s=>!s.vacant).map(s=>s.id);
+const live=()=>items.filter(i=>!i.sold&&i.state!=='group');
+const stallsOf=d=>[...new Set(live().filter(i=>i.dep===d.id).map(i=>i.seat))];
+const priceTxt=i=>i.mode==='swap'?'<span class="price swap">徵交換</span>':i.mode==='free'?'<span class="price swap">免費送</span>':'<span class="price">NT$'+Number(i.price).toLocaleString()+'</span>';
+const thumb=i=>{const c=cat(i.cat);return '<div class="thumb" style="background:'+c[2]+'">'+(i.photo?'<img alt="" src="'+esc(i.photo)+'">':esc(c[0]==='3c'?'3C':c[1].slice(0,2)))+'</div>'};
+let INT=new Set();if(!CLOUDMODE)try{INT=new Set(JSON.parse(localStorage.getItem('etu-interest')||'[]'))}catch(e){}
+const askBtn=(i,sm)=>'<button type="button" class="btn sm'+(INT.has(i.id)?' ghost on':'')+'" data-ask="'+esc(i.id)+'" aria-pressed="'+INT.has(i.id)+'">'+(INT.has(i.id)?(sm?'✓ 已通知':'✓ 已通知賣家'):'我有興趣')+'</button>';
+let askNote='';
+function ask(id){const i=items.find(x=>x.id===id);if(!i)return;
+  if(CLOUDMODE){if(!window.CLOUD)return toast('雲端還在連線中，請稍候再試。');const on=!INT.has(id);CLOUD.setInterest(i,on).then(ok=>{if(!ok)return;askNote=on?'已通知 '+i.seller+'：你對「'+i.title+'」有興趣，系統會寄 Email 給賣家。':'已取消對「'+i.title+'」的興趣。';if(on)INT.add(id);else INT.delete(id);toast(askNote);drawList();if(st.seat)render()});return}
+  if(INT.has(id)){INT.delete(id);askNote='已取消對「'+i.title+'」的興趣。'}else{INT.add(id);askNote='已通知 '+i.seller+'：你對「'+i.title+'」有興趣。正式版會自動寄 Email 給賣家。'}
+  try{localStorage.setItem('etu-interest',JSON.stringify([...INT]))}catch(e){}
+  drawList();if(st.seat)render()}
+const hue=n=>{let h=0;for(const ch of n)h=(h*31+ch.charCodeAt(0))%360;return 'hsl('+h+' 55% 48%)'};
+
+/* ---------- isometric drawing (units: metres) ---------- */
+let S=17,RW=41.7,RD=14.3;const ROT=3;const C=.866;
+const rp=(x,y)=>ROT===1?[RD-y,x]:ROT===2?[RW-x,RD-y]:ROT===3?[y,RW-x]:[x,y];
+const P0=(x,y,z)=>[(x-y)*S*C,(x+y)*S*.5-z*S];
+const P=(x,y,z)=>P0(...rp(x,y),z);
+const pts=a=>a.map(p=>P0(...p).map(v=>v.toFixed(1)).join(',')).join(' ');
+const ext=()=>ROT%2?[RD,RW]:[RW,RD];
+const shade=(hex,k)=>{const n=parseInt(hex.slice(1),16);const f=v=>Math.round(v*(1-k));return 'rgb('+f(n>>16)+','+f(n>>8&255)+','+f(n&255)+')'};
+function box(x,y,z,w,d,h,col,raw){
+  if(!raw){const a=rp(x,y),b=rp(x+w,y+d);x=Math.min(a[0],b[0]);y=Math.min(a[1],b[1]);w=Math.abs(a[0]-b[0]);d=Math.abs(a[1]-b[1])}
+  const t=z+h;
+  return '<g><polygon fill="'+shade(col,.18)+'" points="'+pts([[x,y+d,z],[x+w,y+d,z],[x+w,y+d,t],[x,y+d,t]])+'"/>'+
+  '<polygon fill="'+shade(col,.32)+'" points="'+pts([[x+w,y,z],[x+w,y+d,z],[x+w,y+d,t],[x+w,y,t]])+'"/>'+
+  '<polygon class="tp" fill="'+col+'" points="'+pts([[x,y,t],[x+w,y,t],[x+w,y+d,t],[x,y+d,t]])+'"/></g>'}
+function label(x,y,z,txt,sub){
+  const [sx,sy]=P(x,y,z);const w=Math.max(txt.length*15,sub?sub.length*8:0)+22;
+  return '<g class="lab" pointer-events="none"><rect x="'+(sx-w/2)+'" y="'+(sy-42)+'" width="'+w+'" height="'+(sub?44:30)+'" rx="10" fill="#fff" stroke="#151826" stroke-opacity=".12"/><text x="'+sx+'" y="'+(sy-21)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#151826">'+esc(txt)+'</text>'+(sub?'<text x="'+sx+'" y="'+(sy-5)+'" text-anchor="middle" font-size="12" fill="#d62839" font-weight="700">'+esc(sub)+'</text>':'')+'</g>'}
+function awning(x,y,z,w,d){
+  let s='';const n=3,sw=w/n;
+  s+=box(x+.03,y+d-.05,z,.04,.04,.7,'#8a8fa3')+box(x+w-.07,y+d-.05,z,.04,.04,.7,'#8a8fa3');
+  for(let i=0;i<n;i++)s+=box(x+i*sw,y-.05,z+.7,sw,d+.1,.08,i%2?'#ffffff':'#d62839');
+  return s}
+function pin(x,y,z,n,cls){
+  const [sx,sy]=P(x,y,z);
+  return '<g class="'+(cls||'')+'" pointer-events="none"><path d="M'+sx+' '+sy+'l-9 -14a13 13 0 1 1 18 0z" fill="#d62839" stroke="#fff" stroke-width="2"/><text x="'+sx+'" y="'+(sy-19)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">'+n+'</text></g>'}
+function fit(svg){const b=svg.firstElementChild.getBBox();const m=18;svg.setAttribute('viewBox',(b.x-m)+' '+(b.y-m)+' '+(b.width+m*2)+' '+(b.height+m*2))}
+
+const st={dep:null,seat:null};
+const svg=document.getElementById('iso'),panel=document.getElementById('panel'),crumbs=document.getElementById('crumbs');
+const DW=.66,DD=.9,G=.08;
+const bySum=(a,b)=>{const p=rp(a.x,a.y),q=rp(b.x,b.y);return p[0]+p[1]-q[0]-q[1]};
+
+function xmasTree(x,y,k,z0=0){
+  let s=box(x-.12*k,y-.12*k,z0,.24*k,.24*k,.4*k,'#8a5a2b');
+  [[.9,.4],[.7,1.0],[.48,1.55],[.28,2.05]].forEach(([r,z])=>{s+=box(x-r*k,y-r*k,z0+z*k,2*r*k,2*r*k,.55*k,'#1f8a4c')});
+  [[-.5,.75,'#d62839'],[.45,1.3,'#f2c14e'],[-.3,1.85,'#4aa8ff']].forEach(([o,z,c])=>{s+=box(x+o*k,y+.55*k,z0+z*k,.14*k,.14*k,.14*k,c)});
+  s+=box(x-.14*k,y-.14*k,z0+2.6*k,.28*k,.28*k,.28*k,'#f2c14e');
+  return s}
+function gifts(x,y){return box(x,y,0,.5,.5,.4,'#d62839')+box(x+.6,y+.1,0,.4,.4,.3,'#f2c14e')+box(x+.15,y+.6,0,.35,.35,.28,'#2fa36b')}
+function drawFloor(){
+  S=17;RW=41.7;RD=14.3;
+  let s=box(-.3,-.3,-.4,42.3,14.9,.4,'#e3e7f1');
+  s+=box(3.6,6.7,0,24.2,1.6,.03,'#f6f7fb');
+  s+=box(0,14.3,0,41.7,.3,.03,'#f6f7fb');
+  const all=[...OTHER.map(o=>({o,x:o[2]+o[4]/2,y:o[3]+o[5]/2})),...DEPS.map(d=>({d,x:d.x+d.w/2,y:d.y+d.d/2}))].sort(bySum);
+  let labs='';
+  for(const it of all){
+    if(it.o){const [id,nm,x,y,w,d]=it.o;s+=box(x+G,y+G,0,w-2*G,d-2*G,.12,'#cdd2e0');const [lx,ly]=P(x+w/2,y+d/2,.12);labs+='<text x="'+lx+'" y="'+(ly+4)+'" text-anchor="middle" font-size="11" fill="#5b6075" pointer-events="none">'+esc(nm)+'</text>';continue}
+    const d=it.d,n=stallsOf(d);let g=box(d.x+G,d.y+G,0,d.w-2*G,d.d-2*G,.18,d.color);
+    for(const t of [...d.seats].sort(bySum))g+=box(d.x+t.x-DW/2,d.y+t.y-DD/2,.18,DW,DD,.45,t.vacant?'#aeb4c6':n.includes(t.id)?'#d62839':'#ffffff');
+    s+='<g class="hit" tabindex="0" role="button" aria-label="'+d.name+'，'+n.length+' 個攤位" data-dep="'+d.id+'">'+g+'</g>';
+    labs+='<g class="hit" data-dep="'+d.id+'">'+label(d.x+d.w/2,d.y+d.d/2,2.4,d.name,n.length?n.length+' 個攤位':'暫無攤位')+'</g>'}
+  s+=gifts(4.1,7.7)+xmasTree(5.8,7.5,1.35);
+  return s+labs}
+
+function snowman(x,y){
+  return box(x-.32,y-.32,0,.64,.64,.5,'#ffffff')+box(x-.26,y-.26,.5,.52,.52,.07,'#d62839')+box(x-.22,y-.22,.57,.44,.44,.38,'#f7f9fd')+box(x-.03,y+.22,.72,.06,.18,.06,'#f08a24')+box(x+.22,y-.12,.78,.02,.07,.07,'#151826')+box(x+.22,y+.06,.78,.02,.07,.07,'#151826')+box(x-.26,y-.26,.95,.52,.52,.04,'#151826')+box(x-.16,y-.16,.99,.32,.32,.28,'#151826')}
+function roomDeco(d,EW,ED){
+  let s='';const cols=['#d62839','#f2c14e','#2fa36b','#4aa8ff'];
+  s+=box(0,0,1.12,EW,.07,.1,'#1f8a4c',1)+box(0,0,1.12,.07,ED,.1,'#1f8a4c',1);
+  let k=0;for(let x=.35;x<EW;x+=.55)s+=box(x,.07,1.0,.09,.05,.09,cols[k++%4],1);
+  for(let y=.35;y<ED;y+=.55)s+=box(.07,y,1.0,.05,.09,.09,cols[k++%4],1);
+  const wr=(px,py,pz)=>{const [cx,cy]=P0(px,py,pz),r=S*.28;return '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#1f8a4c" stroke-width="'+(S*.13)+'"/><circle cx="'+(cx-r*.5)+'" cy="'+(cy-r*.6)+'" r="'+(S*.05)+'" fill="#d62839"/><circle cx="'+(cx+r*.6)+'" cy="'+(cy+r*.3)+'" r="'+(S*.05)+'" fill="#f2c14e"/><path d="M'+cx+' '+(cy+r)+'l-'+(S*.12)+' '+(S*.1)+'h'+(S*.24)+'z" fill="#d62839"/>'};
+  s+=wr(EW*.5,0,.62)+wr(0,ED*.5,.62);
+  let seed=d.w*7+d.d*13;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280};
+  for(let i=0;i<Math.round(d.w*d.d*.45);i++){const x=.2+rnd()*(d.w-.4),y=.2+rnd()*(d.d-.4);s+=box(x,y,0,.11,.11,.012,'#ffffff')}
+  return s}
+function drawDept(d){
+  S=Math.min(46,820/((d.w+d.d)*C));RW=d.w;RD=d.d;const [EW,ED]=ext();
+  const stalls=stallsOf(d);let labs='';
+  let s=box(0,0,-.2,d.w,d.d,.2,d.color);
+  s+=box(0,-.15,0,EW,.15,1.3,'#cfd4e3',1)+box(-.15,-.15,0,.15,ED+.15,1.3,'#dde1ec',1);
+  s+=roomDeco(d,EW,ED);
+  const spots=[[.9,.9],[d.w-.9,.9],[.9,d.d-.9],[d.w-.9,d.d-.9],[d.w/2,.9],[d.w/2,d.d-.9],[.9,d.d/2],[d.w-.9,d.d/2]].map(([x,y])=>({x,y,m:Math.min(...d.seats.map(t=>Math.hypot(t.x-x,t.y-y)))})).sort((p,q)=>q.m-p.m);
+  const deco=[{x:spots[0].x,y:spots[0].y,f:()=>xmasTree(spots[0].x,spots[0].y,.75)+gifts(spots[0].x+.35,spots[0].y+.35)}];
+  if(spots[1]&&spots[1].m>1)deco.push({x:spots[1].x,y:spots[1].y,f:()=>snowman(spots[1].x,spots[1].y)});
+  for(const o of [...d.seats,...deco].sort(bySum)){
+    if(o.f){s+=o.f();continue}const t=o;
+    const has=stalls.includes(t.id),sel=st.seat===t.id,x=t.x-DW/2,y=t.y-DD/2;
+    let g=box(x,y,0,DW,DD,.6,t.vacant?'#c3c8d6':has?'#c8283a':'#eef0f6');
+    if(has)g+=box(x-.03,y-.03,.6,DW+.06,DD+.06,.04,'#ffffff');
+    if(!t.vacant&&!has)g+=box(x+.12,y+.08,.64,DW-.24,.05,.32,'#2b2f3f');
+    if(has){const dec=[{x:x+.12,y:y+.08,f:()=>box(x+.12,y+.08,.64,DW-.24,.05,.32,'#2b2f3f')},{x:t.x-.08,y:t.y+.05,f:()=>xmasTree(t.x-.06,t.y+.02,.3,.64)},{x:x+DW-.3,y:y+DD-.32,f:()=>box(x+DW-.3,y+DD-.32,.64,.24,.24,.2,'#f2c14e')+box(x+DW-.31,y+DD-.21,.64,.26,.02,.21,'#d62839')},{x:x+.06,y:y+DD-.26,f:()=>box(x+.06,y+DD-.26,.64,.2,.2,.16,'#2fa36b')}];for(const o of dec.sort(bySum))g+=o.f()}
+    if(has){const n=live().filter(i=>i.dep===d.id&&i.seat===t.id).length;g+=pin(t.x,t.y,1.75,n,sel?'pulse':'')}
+    {const cs=[[x,y],[x+DW,y],[x,y+DD],[x+DW,y+DD]].map(c=>P(c[0],c[1],.6)),lx=Math.min(...cs.map(c=>c[0])),ly=Math.min(...cs.map(c=>c[1]));
+     const tx=t.vacant?'空位':t.name&&t.name!=='?'?t.name:t.id.replace(d.id+'-',''),tw=[...tx].reduce((a,ch)=>a+(ch.charCodeAt(0)>255?11:6.5),0)+10;
+     labs+='<g pointer-events="none" opacity="'+(t.vacant?.55:1)+'"><rect x="'+(lx-4)+'" y="'+(ly-17)+'" width="'+tw+'" height="16" rx="5" fill="#fff" stroke="#151826" stroke-opacity=".15"/><text x="'+(lx+1)+'" y="'+(ly-5)+'" font-size="11" font-weight="700" fill="#151826">'+esc(tx)+'</text></g>'}
+    if(sel)g='<g filter="drop-shadow(0 0 6px #ffc93c)">'+g+'</g>';
+    s+=has?'<g class="hit" tabindex="0" role="button" aria-label="'+esc(nameOf(t.id))+' 的攤位，座位 '+t.id+'" data-seat="'+t.id+'">'+g+'</g>':'<g>'+g+'</g>'}
+  return s+labs}
+
+function render(){
+  const use3d=!!(st.dep&&window.M3D);svg.closest('.stage').classList.toggle('is3d',use3d);
+  svg.innerHTML='<g class="fade">'+(st.dep&&!use3d?drawDept(dep(st.dep)):!st.dep?drawFloor():'')+'</g>';
+  if(!use3d)fit(svg);
+  const d=st.dep&&dep(st.dep);
+  crumbs.innerHTML='<button data-go="floor" '+(d?'':'disabled')+'>商學大樓 6F</button>'+(d?'<span>›</span><button data-go="dep" '+(st.seat?'':'disabled')+'>'+d.name+'</button>':'')+(st.seat?'<span>›</span><button disabled>座位 '+esc(st.seat)+'</button>':'');
+  renderPanel();if(window.M3D)M3D.sync();if(window.CLOUD)CLOUD.setWhere(st.dep,st.seat)}
+
+function renderPanel(){
+  if(!st.dep){
+    const tot=live().length,sellers=new Set(live().map(i=>i.seller)).size,stalls=DEPS.reduce((a,d)=>a+stallsOf(d).length,0);
+    panel.innerHTML='<h2>聖誕市集現況</h2>'+(CLOUDMODE?'<p class="loc online"><i></i>現在有 '+(PEOPLE.length+1)+' 人在逛</p>':'')+'<div class="stats"><div><b>'+stalls+'</b><span>攤位</span></div><div><b>'+tot+'</b><span>件物品</span></div><div><b>'+sellers+'</b><span>位賣家</span></div></div><div class="deplist">'+DEPS.map(d=>'<button data-dep="'+d.id+'"><span><span class="dot" style="background:'+d.color+'"></span>'+d.name+'</span><span class="loc">'+stallsOf(d).length+' 攤 ›</span></button>').join('')+'</div>';return}
+  const d=dep(st.dep);
+  if(!st.seat){
+    const ss=stallsOf(d);
+    panel.innerHTML='<h2>'+d.name+'</h2><p class="loc" style="margin:0 0 10px">'+ss.length+' 個攤位，點地圖上擺聖誕樹的座位看看</p><div class="deplist">'+(ss.length?ss.map(id=>{const its=live().filter(i=>i.dep===d.id&&i.seat===id);return '<button data-seat="'+esc(id)+'"><span><b>'+esc(its[0].seller)+'</b> <span class="loc">座位 '+esc(id)+'</span></span><span class="loc">'+its.length+' 件 ›</span></button>'}).join(''):'<p class="loc">這間辦公室還沒有人擺攤。</p>')+'</div>';return}
+  const its=live().filter(i=>i.dep===d.id&&i.seat===st.seat);
+  if(!its.length){st.seat=null;return renderPanel()}
+  const who=its[0].seller;
+  panel.innerHTML='<h2>'+esc(who)+' 的攤位</h2><div class="who"><div class="av" style="background:'+hue(who)+'">'+esc(who.slice(-1))+'</div><div><b>'+d.name+' · 座位 '+esc(st.seat)+'</b><div class="loc">到座位看貨，或先傳訊息聊聊</div></div></div>'+its.map(i=>'<div class="mini">'+thumb(i)+'<div><b>'+esc(i.title)+(i.demo?' <span class="tag">示範</span>':'')+'</b><span class="loc">'+esc(i.desc)+'</span></div><div class="pa">'+priceTxt(i)+askBtn(i)+'</div></div>').join('')+'<p class="loc" id="askmsg" aria-live="polite">'+esc(askNote)+'</p><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn ghost" data-go="dep">回到'+d.name+'</button></div>';askNote=''}
+
+window.MKT={ask,askBtn,DEPS,OTHER,st,live:()=>live(),stallsOf,dep,esc,thumb,priceTxt,cat,hue,render:()=>render(),nameOf};
+function goSeat(depId,seat){st.dep=depId;st.seat=seat;location.hash='#map';show('map');render()}
+const act=e=>{
+  const t=e.target.closest('[data-dep],[data-seat],[data-go],[data-ask]');if(!t)return;
+  if(t.dataset.ask!==undefined){ask(t.dataset.ask);return}
+  if(t.dataset.go==='floor'){st.dep=null;st.seat=null}
+  else if(t.dataset.go==='dep'){st.seat=null}
+  else if(t.dataset.dep){st.dep=t.dataset.dep;st.seat=null}
+  else if(t.dataset.seat){st.seat=t.dataset.seat}
+  render()};
+for(const el of [svg,panel,crumbs])el.addEventListener('click',act);
+svg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();act(e)}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&location.hash!=='#sell'){if(st.seat)st.seat=null;else st.dep=null;render()}});
+
+/* ---------- shop ---------- */
+const q=document.getElementById('q'),fdep=document.getElementById('fdep'),cats=document.getElementById('cats'),list=document.getElementById('list');
+let fc='all';
+fdep.innerHTML='<option value="all">全部辦公室</option>'+DEPS.map(d=>'<option value="'+d.id+'">'+d.name+'</option>').join('');
+const drawCats=()=>{cats.innerHTML=[['all','全部']].concat(CATS).map(c=>'<button class="chip" aria-pressed="'+(fc===c[0])+'" data-c="'+c[0]+'">'+c[1]+'</button>').join('')};
+cats.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b){fc=b.dataset.c;drawCats();drawList()}});
+function drawList(){
+  const k=q.value.trim().toLowerCase();
+  const r=live().filter(i=>(fc==='all'||i.cat===fc)&&(fdep.value==='all'||i.dep===fdep.value)&&(!k||(i.title+i.seller+i.desc).toLowerCase().includes(k)));
+  list.innerHTML=r.length?r.map(i=>'<article class="card">'+thumb(i)+'<div class="bd"><span class="tag">'+esc(cat(i.cat)[1])+' · '+esc(i.cond)+(i.demo?' · 示範':'')+'</span><h3>'+esc(i.title)+'</h3><span class="loc">'+esc(i.seller)+' · '+dep(i.dep).name+' '+esc(i.seat)+'</span><div class="ft">'+priceTxt(i)+'<span class="fb">'+askBtn(i,1)+'<button class="btn sm ghost" data-goto="'+esc(i.id)+'">去座位</button></span></div></div></article>').join(''):'<div class="empty" style="grid-column:1/-1">找不到符合的物品，換個關鍵字或類別試試。</div>'}
+q.addEventListener('input',drawList);fdep.addEventListener('change',drawList);
+list.addEventListener('click',e=>{const a=e.target.closest('[data-ask]');if(a){ask(a.dataset.ask);return}const b=e.target.closest('[data-goto]');if(!b)return;const i=items.find(x=>x.id===b.dataset.goto);goSeat(i.dep,i.seat)});
+
+/* ---------- sell ---------- */
+const f=document.getElementById('f'),sdep=document.getElementById('sdep'),sseat=document.getElementById('sseat'),pv=document.getElementById('pv'),okbox=document.getElementById('okbox');
+let photo='';
+document.getElementById('fcat').innerHTML=CATS.map(c=>'<option value="'+c[0]+'">'+c[1]+'</option>').join('');
+sdep.innerHTML=DEPS.map(d=>'<option value="'+d.id+'">'+d.name+'</option>').join('');
+const fillName=()=>{const t=seatOf(sseat.value);f.seller.value=t&&t.name&&t.name!=='?'?t.name:''};
+const fillSeats=()=>{sseat.innerHTML=seatIds(dep(sdep.value)).map(s=>'<option value="'+s+'">'+s+' '+esc(seatOf(s).name==='?'?'':seatOf(s).name)+'</option>').join('');fillName()};
+sseat.addEventListener('change',fillName);
+sdep.addEventListener('change',fillSeats);fillSeats();
+f.addEventListener('change',e=>{if(e.target.name==='mode'){document.getElementById('plab').hidden=e.target.value!=='sell'}});
+document.getElementById('photo').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const cv=document.createElement('canvas'),m=360,sc=Math.min(1,m/Math.max(im.width,im.height));cv.width=im.width*sc;cv.height=im.height*sc;cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);photo=cv.toDataURL('image/jpeg',.8);pv.innerHTML='<img alt="預覽" src="'+photo+'">'};im.src=rd.result};rd.readAsDataURL(file)});
+f.addEventListener('submit',e=>{
+  e.preventDefault();const v=Object.fromEntries(new FormData(f));
+  if(!v.title.trim()||!v.seller.trim()){okbox.innerHTML='<div class="ok">請填寫物品名稱和你的名字。</div>';return}
+  const it={id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:v.title.trim(),cat:v.cat,mode:v.mode,price:Math.max(0,+v.price||0),seller:v.seller.trim(),dep:v.dep,seat:v.seat,desc:v.desc.trim()||'歡迎到座位看貨。',cond:v.cond,photo,mine:true,sold:false};
+  items.push(it);save();
+  const joinG=v.joing==='yes'&&gOK();
+  const t=seatOf(it.seat);if(t){t.name=it.seller;NAMES[it.seat]=it.seller;if(CLOUDMODE){window.CLOUD&&CLOUD.saveName(it.seat,it.seller)}else try{localStorage.setItem('etu-names',JSON.stringify(NAMES))}catch(e){}}
+  okbox.innerHTML='<div class="ok"><span>「'+esc(it.title)+'」已上架到 '+dep(it.dep).name+' '+esc(it.seat)+'。</span><button type="button" class="btn sm" data-goto="'+it.id+'">在地圖上看</button></div>';
+  f.title.value='';f.desc.value='';photo='';pv.textContent='加照片';gTouched=false;drawMine();drawList();gCheck();
+  if(joinG)toGroup(it)});
+function gOK(){const m=f.querySelector('input[name=mode]:checked').value,p=+f.elements.price.value;return m==='sell'&&p>=5&&p<=100&&p%5===0}
+let gTouched=false;
+function gCheck(){const ok=gOK(),y=document.getElementById('joing'),n=document.getElementById('joingno'),h=document.getElementById('gjoinhint');
+  y.disabled=!ok;if(!ok){n.checked=true}else if(!gTouched){y.checked=true}
+  h.className='gstate '+(ok?'ok':'no');h.textContent=ok?(y.checked?'✓ 這件符合集團市集條件，預設「參加」。不想參加請改選「不參加」。':'這件符合條件，但你選了「不參加」，只會在易圖攤位賣。'):'這件目前不符合條件（要用「售價」且 5–100 元、5 的倍數），只會在易圖攤位賣。'}
+for(const ev of ['input','change'])document.getElementById('gjoin').addEventListener(ev,e=>{if(e.target.name==='joing')gTouched=true});
+f.addEventListener('input',gCheck);f.addEventListener('change',gCheck);
+function toGroup(it){location.hash='#register';setTimeout(()=>prefillFromStall(it),0)}
+okbox.addEventListener('click',e=>{const b=e.target.closest('[data-goto]');if(b){const i=items.find(x=>x.id===b.dataset.goto);goSeat(i.dep,i.seat)}});
+const mine=document.getElementById('mine');
+function drawMine(){const m=items.filter(i=>i.mine);mine.innerHTML=m.length?m.map(i=>'<div class="mini'+(i.sold?' sold':'')+'">'+thumb(i)+'<div><b>'+esc(i.title)+'</b><span class="loc">'+dep(i.dep).name+' '+esc(i.seat)+(i.sold?' · 已成交':'')+(INTBY[i.id]?' · <b class="intby">有興趣：'+esc(INTBY[i.id].join('、'))+'</b>':'')+(i.state==='group'?' · <b>'+(i.forced?'已被選入 12/21 集團市集':'12/21 在集團市集')+'</b>':'')+'</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+(!i.sold&&i.state!=='group'&&i.mode==='sell'&&i.price>=5&&i.price<=100&&i.price%5===0&&!i.gid?'<button class="btn sm ghost" data-g="'+i.id+'">報名集團市集</button>':'')+'<button class="btn sm ghost" data-t="'+i.id+'">'+(i.sold?'重新上架':'標記成交')+'</button><button class="btn sm ghost" data-del="'+i.id+'">下架</button></div></div>').join(''):'<div class="empty">還沒有上架的物品，左邊填一件試試。</div>';drawPick()}
+mine.addEventListener('click',e=>{const g=e.target.closest('[data-g]');if(g){toGroup(items.find(x=>x.id===g.dataset.g));return}const t=e.target.closest('[data-t],[data-del]');if(!t)return;if(t.dataset.t){const i=items.find(x=>x.id===t.dataset.t);i.sold=!i.sold}else items=items.filter(x=>x.id!==t.dataset.del);save();drawMine();drawList()});
+
+/* ---------- faint Christmas village backdrop ---------- */
+{const H=(x,b,w,h,c,roof)=>{const r=w*.62;let o='<rect x="'+x+'" y="'+(b-h)+'" width="'+w+'" height="'+h+'" fill="'+c+'"/><path d="M'+(x-6)+' '+(b-h)+'L'+(x+w/2)+' '+(b-h-r)+'L'+(x+w+6)+' '+(b-h)+'z" fill="'+roof+'"/><path d="M'+(x-6)+' '+(b-h)+'L'+(x+w/2)+' '+(b-h-r)+'L'+(x+w/2+8)+' '+(b-h-r+6)+'L'+(x+6)+' '+(b-h+3)+'z" fill="#fff"/>';
+   for(let i=0;i<Math.floor(w/22);i++)o+='<rect x="'+(x+8+i*22)+'" y="'+(b-h*.62)+'" width="9" height="11" rx="1.5" fill="#ffcf6e"/>';return o};
+ const T=(x,b,k,c)=>'<path d="M'+x+' '+(b-60*k)+'l'+(-16*k)+' '+(24*k)+'h'+(8*k)+'l'+(-12*k)+' '+(18*k)+'h'+(9*k)+'l'+(-14*k)+' '+(18*k)+'h'+(50*k)+'l'+(-14*k)+' '+(-18*k)+'h'+(9*k)+'l'+(-12*k)+' '+(-18*k)+'h'+(8*k)+'z" fill="'+c+'"/>';
+ let v='<svg viewBox="0 0 1200 420" preserveAspectRatio="xMidYMax slice"><path d="M0 250 Q150 190 320 235 T640 220 T960 210 T1200 230 V420 H0z" fill="#c5d4e6"/>';
+ [[40,'#b3c4d8'],[180,'#b3c4d8'],[520,'#b3c4d8'],[860,'#b3c4d8'],[1110,'#b3c4d8']].forEach(([x,c])=>v+=T(x,238,1.2,c));
+ v+=H(90,262,64,46,'#a9bcd2','#8fa6c1')+H(250,255,52,40,'#a9bcd2','#8fa6c1')+H(700,250,70,48,'#a9bcd2','#8fa6c1')+H(980,252,58,42,'#a9bcd2','#8fa6c1');
+ v+='<rect x="420" y="168" width="44" height="80" fill="#a9bcd2"/><path d="M414 168 L442 100 L470 168z" fill="#8fa6c1"/><rect x="436" y="186" width="12" height="18" rx="6" fill="#ffcf6e"/>';
+ v+='<path d="M0 330 Q200 280 420 318 T820 300 T1200 312 V420 H0z" fill="#eaf1f8"/>';
+ [[60,1],[300,.9],[610,1.1],[940,1],[1160,.9]].forEach(([x,k])=>v+=T(x,322,k,'#7f9c8c'));
+ v+=H(130,345,80,52,'#c9a98a','#9c6b4b')+H(470,338,92,58,'#c9a98a','#9c6b4b')+H(800,342,76,50,'#c9a98a','#9c6b4b')+H(1060,348,70,46,'#c9a98a','#9c6b4b');
+ v+='<path d="M0 380 Q300 352 600 372 T1200 366 V420 H0z" fill="#ffffff"/></svg><div class="moon"></div>';
+ const D=(x)=>'<g transform="translate('+x+',0)"><ellipse cx="0" cy="40" rx="15" ry="7"/><path d="M11 37l7-11 4 2-5 10z"/><ellipse cx="21" cy="25" rx="6" ry="4"/><path d="M19 22l-3-9M17 16l-4-2M21 21l2-10M22 14l4-3" stroke="#56708f" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M-11 44l-7 9M-7 45l-2 11M8 45l6 9M11 44l9 6" stroke="#56708f" stroke-width="2.4" stroke-linecap="round"/></g>';
+ const santa='<div class="santa"><svg viewBox="-30 0 290 80" aria-hidden="true"><path d="M-30 52 Q20 70 70 50" stroke="#f2c14e" stroke-width="1.5" stroke-dasharray="1 6" stroke-linecap="round" fill="none" opacity=".8"/><g fill="#56708f">'+
+  '<path d="M40 50 h40 q8 0 8-8 v-6 h-6 v4 q0 4-4 4 h-34 q-6 0-8 6z"/><path d="M38 56 h52 q6 0 8-6" stroke="#56708f" stroke-width="2.5" fill="none" stroke-linecap="round"/>'+
+  '<circle cx="62" cy="26" r="6"/><path d="M56 30 h14 l3 14 h-20z"/><path d="M58 21 q4-10 12-4 l4 6-6-2z" fill="#c0392b"/><circle cx="75" cy="23" r="2.5" fill="#fff"/><path d="M71 33 q10-2 14 4" stroke="#56708f" stroke-width="3" fill="none"/>'+
+  '<path d="M44 40 h14 v8 h-14z" fill="#b5651d"/>'+
+  '<path d="M88 40 L250 32" stroke="#56708f" stroke-width="1.2" fill="none"/>'+D(125)+D(170)+D(215)+'<circle cx="236" cy="25" r="2.6" fill="#e74c3c"/></g></svg></div>';
+ document.getElementById('village').innerHTML=v+santa}
+
+/* ---------- falling snow over the map ---------- */
+{const cv=document.getElementById('snowfx'),cx=cv.getContext('2d');let fl=[],w=0,h=0;
+ const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const size=()=>{const r=cv.getBoundingClientRect(),dp=devicePixelRatio||1;w=r.width;h=r.height;cv.width=w*dp;cv.height=h*dp;cx.setTransform(dp,0,0,dp,0,0);
+   fl=Array.from({length:Math.round(w*h/5000)},()=>({x:Math.random()*w,y:Math.random()*h,r:.8+Math.random()*2.6,v:.25+Math.random()*.8,p:Math.random()*6.28}));if(still)paint()};
+ const paint=()=>{cx.clearRect(0,0,w,h);for(const f of fl){cx.beginPath();cx.arc(f.x,f.y,f.r,0,6.283);cx.fillStyle='rgba(255,255,255,'+(.55+f.r/8)+')';cx.shadowColor='rgba(120,150,190,.5)';cx.shadowBlur=3;cx.fill()}};
+ const tick=()=>{for(const f of fl){f.y+=f.v;f.p+=.012;f.x+=Math.sin(f.p)*.35;if(f.y>h+4){f.y=-4;f.x=Math.random()*w}}paint();requestAnimationFrame(tick)};
+ const snowRO=new ResizeObserver(size);snowRO.observe(cv);size();if(!still)requestAnimationFrame(tick)}
+
+/* ---------- phase 1: group ESG market ---------- */
+const COS=[['A','天擘'],['B','天眼'],['C','天思'],['D','準線'],['E','易圖']];
+const GC=[ // id, name, price range, co2 key
+ ['appl','小家電',[50,100]],['book','書籍',[10,50]],['gift','未拆封禮品',[20,100]],['life','生活雜品',[10,60]],['stat','文具',[5,20]],['toy','玩具',[10,60]],['other','其他',[5,100]]];
+const CF={stat:['文具','筆、筆記本、資料夾、便利貼',.1,1,.5],book:['書籍','平裝書、雜誌、繪本',1,3,2],life:['生活雜品','馬克杯、收納盒、餐具、保溫瓶',.5,3,1.5],toy:['玩具','塑膠玩具、桌遊、絨毛玩偶',1,5,3],appl_s:['小家電（小型）','隨身風扇、檯燈、電動牙刷',5,15,10],appl_m:['小家電（中型）','快煮壺、吹風機、熨斗',15,30,20],appl_l:['小家電（較大）','果汁機、電子鍋、咖啡機',30,50,40]};
+const SIZES=[['s','小型'],['m','中型'],['l','較大']];
+const BASES=[['stat','文具'],['book','書籍'],['life','生活雜品'],['toy','玩具'],['appl_s','小家電（小型）'],['appl_m','小家電（中型）'],['appl_l','小家電（較大）']];
+const CONDS=['全新／未拆封','9 成新以上','8 成新以上'],FUNCS=['功能正常','已通電測試（小家電）'],UNS=[['return','退還本人（12/28 前領回）'],['donate','聖誕送暖捐贈'],['stall','放回易圖座位攤位（12/22–24）']];
+const r1=v=>Math.round(v*10)/10;
+let GS={items:[],meta:{}};if(!CLOUDMODE)try{const o=JSON.parse(localStorage.getItem('esg-items')||'null');if(o&&Array.isArray(o.items))GS=o}catch(e){}
+const gsave=()=>{if(CLOUDMODE){if(window.CLOUD)CLOUD.saveGroup(GS);else toast('雲端還在連線中，請稍候再試。');return}try{localStorage.setItem('esg-items',JSON.stringify(GS))}catch(e){}};
+const coName=c=>(COS.find(x=>x[0]===c)||['',''])[1];
+const gcat=id=>GC.find(c=>c[0]===id);
+const keyOf=it=>it.cat==='appl'?'appl_'+(it.size||'s'):(it.cat==='gift'||it.cat==='other')?(it.base||'life'):it.cat;
+const catLabel=it=>it.cat==='appl'?'小家電（'+(SIZES.find(s=>s[0]===it.size)||SIZES[0])[1]+'）':it.cat==='other'?'其他：'+(it.catOther||''):gcat(it.cat)[1];
+
+// home tables
+document.getElementById('reftable').innerHTML=[['stat','文具','5–20'],['book','書籍','10–50'],['life','生活雜品','10–60'],['toy','玩具','10–60'],['appl_s','小家電（小型）','50–100'],['appl_m','小家電（中型）','50–100'],['appl_l','小家電（較大）','50–100']].map(([k,n,p])=>'<tr><td>'+n+'<div class="loc">'+CF[k][1]+'</div></td><td class="num">'+p+' 元</td><td class="num">'+CF[k][2]+'–'+CF[k][3]+' kg</td><td class="num"><b>'+CF[k][4].toFixed(1)+' kg</b></td></tr>').join('')+'<tr><td>未拆封禮品<div class="loc">依實際品項歸入相近類別</div></td><td class="num">20–100 元</td><td class="num">同歸入類別</td><td class="num">—</td></tr>';
+
+function showStallOpt(){const l=document.querySelector('#runsold label[data-v=stall]');if(l)l.hidden=!R.link}
+function prefillFromStall(it){
+  resetForm(true);R.link=it.id;showStallOpt();
+  rf.elements.owner.value=it.seller;rf.elements.dept.value=dep(it.dep).name+'／'+it.seat;rf.elements.name.value=it.title;rf.elements.desc.value=it.desc;rprice.value=it.price;
+  const cm={'全新':CONDS[0],'九成新':CONDS[1],'有使用痕跡':CONDS[2]}[it.cond];const c=rf.querySelector('input[name=cond][value="'+cm+'"]');if(c)c.checked=true;
+  rf.querySelector('input[name=uns][value=stall]').checked=true;
+  rmsg.innerHTML='<div class="ok">已從你的易圖攤位帶入「'+esc(it.title)+'」。選好類別和功能檢查，碳排就會算好，按「登記這件好物」完成報名。</div>';
+  markSeg();priceHint();drawCO2()}
+// register form
+const rf=document.getElementById('rf'),rco=document.getElementById('rco'),rcode=document.getElementById('rcode'),rprice=document.getElementById('rprice'),rmsg=document.getElementById('rmsg');
+const R={cat:'',size:'s',base:'life',cond:'',func:[],uns:'return',adj:null,edit:null,link:null,forced:false};
+rco.innerHTML='<option value="E" selected>易圖（E）</option>';
+const nextCode=co=>{const used=new Set(GS.items.filter(i=>i.co===co).map(i=>i.code));for(let n=1;n<=50;n++){const c=co+String(n).padStart(2,'0');if(!used.has(c))return c}return ''};
+const segs=(id,opts,name,multi)=>{document.getElementById(id).innerHTML=opts.map(([v,t])=>'<label data-v="'+v+'"><input type="'+(multi?'checkbox':'radio')+'" name="'+name+'" value="'+v+'">'+t+'</label>').join('')};
+segs('rcat',GC.map(c=>[c[0],c[1]]),'cat');
+segs('rcond',CONDS.map(c=>[c,c]),'cond');
+segs('rfunc',FUNCS.map(c=>[c,c]),'func',1);
+segs('runsold',UNS,'uns');
+const markSeg=()=>{for(const l of rf.querySelectorAll('.seg label'))l.classList.toggle('on',l.querySelector('input').checked)};
+function drawSub(){
+  const b=document.getElementById('rsub');
+  if(R.cat==='appl')b.innerHTML='<label>小家電尺寸<select class="field" id="rsize">'+SIZES.map(s=>'<option value="'+s[0]+'"'+(R.size===s[0]?' selected':'')+'>'+s[1]+'（'+CF['appl_'+s[0]][1]+'）</option>').join('')+'</select></label>';
+  else if(R.cat==='gift'||R.cat==='other')b.innerHTML=(R.cat==='other'?'<label>其他類別名稱<input class="field" id="rother" maxlength="12" placeholder="例如：飾品"></label>':'')+'<label>碳排歸入類別<small>依實際品項選最接近的</small><select class="field" id="rbase">'+BASES.map(s=>'<option value="'+s[0]+'"'+(R.base===s[0]?' selected':'')+'>'+s[1]+'</option>').join('')+'</select></label>';
+  else b.innerHTML='';
+  b.hidden=!b.innerHTML}
+const curKey=()=>R.cat?keyOf({cat:R.cat,size:R.size,base:R.base}):null;
+function co2Now(){
+  if(document.getElementById('coff').checked){const v=parseFloat(document.getElementById('coffv').value);return isFinite(v)&&v>=0?r1(v):null}
+  const k=curKey();if(!k)return null;const f=CF[k];return r1(R.adj==null?f[4]:Math.min(f[3],Math.max(f[4],R.adj)))}
+function drawCO2(){
+  const k=curKey(),off=document.getElementById('coff').checked,v=co2Now();
+  document.getElementById('cv').textContent=v==null?'—':v.toFixed(1);
+  const why=document.getElementById('cwhy'),adj=document.getElementById('cadj');
+  if(off){why.textContent='使用官方碳足跡數據，請填來源以便碳排資料組審核。';adj.innerHTML=''}
+  else if(!k){why.textContent='先選類別，這裡會依附件四算出建議標示值。';adj.innerHTML=''}
+  else{const f=CF[k];why.textContent=f[0]+'建議標示值 '+f[4].toFixed(1)+' kg（參考區間 '+f[2]+'–'+f[3]+' kg）。體積或重量明顯較大可調高，但不超過上限。';
+    if(!adj.querySelector('input')||adj.dataset.k!==k){adj.dataset.k=k;adj.innerHTML='<input type="range" id="crange" min="'+f[4]+'" max="'+f[3]+'" step="0.1" value="'+(v??f[4])+'" aria-label="調整碳排標示值"><div class="rng"><span>建議 '+f[4].toFixed(1)+'</span><span>上限 '+f[3].toFixed(1)+'</span></div>'}}
+  const co=rco.value,mine=GS.items.filter(i=>i.co===co&&i.id!==R.edit),tot=mine.reduce((a,i)=>a+i.co2,0);
+  document.getElementById('csum').innerHTML=coName(co)+'目前登記 <b>'+mine.length+'</b> 件，合計 <b>'+r1(tot).toFixed(1)+'</b> kg'+(v!=null?'<br>加上這件 <b>'+r1(tot+v).toFixed(1)+'</b> kg，全部售出就能為集團減少這麼多碳排。':'')}
+function priceHint(){
+  const c=gcat(R.cat),p=+rprice.value,h=document.getElementById('phint');
+  let t='5–100 元，以 5 元為級距'+(c?'；'+c[1]+'建議 '+c[2][0]+'–'+c[2][1]+' 元':'');
+  const bad=rprice.value!==''&&(!(p>=5&&p<=100)||p%5!==0);
+  if(bad)t='售價須為 5–100 元，且為 5 的倍數';
+  else if(c&&rprice.value!==''&&(p<c[2][0]||p>c[2][1]))t+='（目前不在建議區間，可以但請再確認）';
+  h.textContent=t;h.className=bad?'err':'';rprice.classList.toggle('bad',bad);return !bad}
+function resetForm(keep){
+  const co=rco.value;rf.reset();rco.value=keep?co:'E';Object.assign(R,{cat:'',size:'s',base:'life',cond:'',func:[],uns:'return',adj:null,edit:null,link:null,forced:false});showStallOpt();
+  rf.querySelector('input[name=uns][value=return]').checked=true;document.getElementById('coffbox').hidden=true;
+  rcode.value=nextCode(rco.value);document.getElementById('rsubmit').textContent='登記這件好物';drawSub();markSeg();priceHint();drawCO2()}
+rf.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.name==='cat'){R.cat=t.value;R.adj=null;drawSub();if(R.cat==='appl'){const f=rf.querySelector('input[name=func][value="'+FUNCS[1]+'"]');f.checked=true}}
+  if(t.id==='rsize'){R.size=t.value;R.adj=null}
+  if(t.id==='rbase'){R.base=t.value;R.adj=null}
+  if(t===rco&&!R.edit)rcode.value=nextCode(rco.value);
+  if(t.id==='coff')document.getElementById('coffbox').hidden=!t.checked;
+  markSeg();priceHint();drawCO2()});
+rf.addEventListener('input',e=>{if(e.target.id==='crange'){R.adj=+e.target.value;document.getElementById('cv').textContent=r1(R.adj).toFixed(1);drawCO2()}if(e.target.id==='coffv')drawCO2();if(e.target===rprice)priceHint()});
+document.getElementById('coff').addEventListener('change',e=>{document.getElementById('coffbox').hidden=!e.target.checked;drawCO2()});
+document.getElementById('coffv').addEventListener('input',drawCO2);
+document.querySelector('.co2card').addEventListener('input',e=>{if(e.target.id==='crange'){R.adj=+e.target.value;drawCO2()}});
+document.getElementById('rreset').addEventListener('click',()=>{rmsg.innerHTML='';resetForm(true)});
+rf.addEventListener('submit',e=>{
+  e.preventDefault();const v=Object.fromEntries(new FormData(rf)),errs=[];
+  const code=(v.code||'').trim().toUpperCase();
+  if(!new RegExp('^'+v.co+'(0[1-9]|[1-4][0-9]|50)$').test(code))errs.push('商品編號要是 '+v.co+'01–'+v.co+'50');
+  else if(GS.items.some(i=>i.code===code&&i.id!==R.edit))errs.push('商品編號 '+code+' 已經用過');
+  if(!(v.owner||'').trim())errs.push('請填好物主人姓名');
+  if(!(v.name||'').trim())errs.push('請填品名');
+  if(!R.cat)errs.push('請選類別');
+  if(R.cat==='other'&&!(document.getElementById('rother')?.value||'').trim())errs.push('請填其他類別名稱');
+  if(!v.cond)errs.push('請選新舊程度');
+  const func=[...rf.querySelectorAll('input[name=func]:checked')].map(i=>i.value);
+  if(!func.length)errs.push('請勾選功能檢查');
+  if(R.cat==='appl'&&!func.includes(FUNCS[1]))errs.push('小家電須通電測試');
+  if(rprice.value===''||!priceHint())errs.push('售價須為 5–100 元，且為 5 的倍數');
+  const co2=co2Now();if(co2==null)errs.push('碳排放量還沒算出來');
+  const off=document.getElementById('coff').checked;if(off&&!document.getElementById('coffs').value.trim())errs.push('請填官方碳足跡的資料來源');
+  if(!v.noban||!v.agree)errs.push('請勾選最下面兩個確認項目');
+  if(errs.length){rmsg.innerHTML='<div class="ok err">'+errs.map(esc).join('<br>')+'</div>';rmsg.scrollIntoView({block:'nearest'});return}
+  const it={id:R.edit||'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),co:v.co,code,owner:v.owner.trim(),dept:(v.dept||'').trim(),name:v.name.trim(),cat:R.cat,size:R.size,base:R.base,catOther:(document.getElementById('rother')?.value||'').trim(),cond:v.cond,func,price:+rprice.value,co2,co2src:off?document.getElementById('coffs').value.trim():'',desc:(v.desc||'').trim(),uns:v.uns||'return',t:Date.now()};
+  const old=R.edit&&GS.items.find(i=>i.id===R.edit);if(old){it.yid=old.yid;it.result=old.result}
+  if(R.forced)it.by='admin';if(R.link){it.yid=R.link;const y=items.find(x=>x.id===R.link);if(y){y.state='group';y.gid=it.id;y.forced=R.forced||!!y.forced;save();drawMine();drawList()}}
+  if(!it.yid&&it.uns==='stall')it.uns='return';
+  const wasEdit=!!R.edit;GS.items=GS.items.filter(i=>i.id!==it.id).concat(it);gsave();
+  rmsg.innerHTML='<div class="ok"><span>'+(wasEdit?'已更新':'已登記')+' '+esc(it.code)+'「'+esc(it.name)+'」，'+it.co2.toFixed(1)+' kg CO₂e。</span><a class="btn sm" href="#list">看清冊</a></div>';
+  resetForm(true);drawList2()});
+
+// list
+const lco=document.getElementById('lco'),ltb=document.querySelector('#ltable tbody');
+let LC='E';
+lco.innerHTML=COS.map(c=>'<option value="'+c[0]+'">'+c[1]+'（'+c[0]+'）</option>').join('');
+function drawList2(){
+  lco.value=LC;const m=GS.meta[LC]||{};document.getElementById('lrep').value=m.rep||'';document.getElementById('ldate').value=m.date||'';
+  {const its=GS.items.filter(i=>i.co==='E'),n=its.length;document.getElementById('cobar').innerHTML='<div class="stat"><b>'+n+'／20</b><span>已登記件數</span><div class="meter"><i style="width:'+Math.min(100,n/20*100)+'%"></i></div></div><div class="stat"><b>'+Math.max(0,20-n)+'</b><span>還差幾件到 20 件</span></div><div class="stat"><b>NT$'+its.reduce((a,i)=>a+i.price,0)+'</b><span>售價合計</span></div><div class="stat"><b>'+r1(its.reduce((a,i)=>a+i.co2,0)).toFixed(1)+' kg</b><span>全部售出可減碳</span></div>'}
+  const its=GS.items.filter(i=>i.co===LC).sort((a,b)=>a.code.localeCompare(b.code));
+  ltb.innerHTML=its.length?its.map(i=>'<tr><td><b>'+esc(i.code)+'</b></td><td>'+esc(i.name)+(i.desc?'<div class="loc">'+esc(i.desc)+'</div>':'')+'</td><td>'+esc(catLabel(i))+'</td><td>'+esc(i.cond.replace('以上','').replace('全新／未拆封','全新'))+'</td><td>'+esc(i.owner)+'</td><td class="num">'+i.price+'</td><td class="num">'+i.co2.toFixed(1)+'</td><td>'+({donate:'捐贈',stall:'回易圖攤位',return:'退還'}[i.uns]||'退還')+'</td><td>'+(i.result?'<b>'+(i.result==='sold'?'已售出':'未售出')+'</b> <button class="btn sm ghost" data-res="" data-id="'+esc(i.id)+'">復原</button>':'<button class="btn sm ghost" data-res="sold" data-id="'+esc(i.id)+'">售出</button> <button class="btn sm ghost" data-res="unsold" data-id="'+esc(i.id)+'">未售出</button>')+'</td><td><button class="btn sm ghost" data-edit="'+esc(i.id)+'">編輯</button> <button class="btn sm ghost" data-del="'+esc(i.id)+'">刪除</button></td></tr>').join('')+'<tr><td><b>合計</b></td><td>共 '+its.length+' 件</td><td></td><td></td><td></td><td class="num"><b>'+its.reduce((a,i)=>a+i.price,0)+'</b></td><td class="num"><b>'+r1(its.reduce((a,i)=>a+i.co2,0)).toFixed(1)+'</b></td><td></td><td>售出 '+its.filter(i=>i.result==='sold').length+' 件</td><td></td></tr>':'<tr><td colspan="10"><div class="empty">'+coName(LC)+'還沒有登記的好物。<a href="#register">去登記第一件</a></div></td></tr>';labelCells();drawPick()}
+const elig=i=>!i.sold&&i.state!=='group'&&!i.gid&&i.mode==='sell'&&i.price>=5&&i.price<=100&&i.price%5===0;
+function drawPick(){const el=document.getElementById('pick');if(!el)return;const m=items.filter(elig);
+  el.innerHTML=m.length?m.map(i=>'<div class="mini">'+thumb(i)+'<div><b>'+esc(i.title)+' · NT$'+i.price+'</b><span class="loc">'+esc(i.seller||'')+' · '+dep(i.dep).name+' '+esc(i.seat)+'</span></div><button class="btn sm" data-pick="'+i.id+'">選入</button></div>').join(''):'<div class="empty">目前沒有符合條件、還沒選入的上架商品。</div>'}
+document.getElementById('pick').addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(!b)return;const it=items.find(x=>x.id===b.dataset.pick);if(!it)return;
+  location.hash='#register';setTimeout(()=>{prefillFromStall(it);R.forced=true;rmsg.innerHTML='<div class="ok">管理員選入：已帶入 '+esc(it.seller||'')+' 的「'+esc(it.title)+'」。選好類別和功能檢查後按「登記這件好物」，商品 12/21 會從攤位移到集團市集。</div>'},0)});
+function labelCells(){const hs=[...document.querySelectorAll('#ltable thead th')].map(h=>h.textContent);for(const tr of ltb.rows)[...tr.cells].forEach((c,i)=>c.dataset.l=hs[i]||'')}
+lco.addEventListener('change',()=>{LC=lco.value;GS.meta.lco=LC;gsave();drawList2()});
+for(const id of ['lrep','ldate'])document.getElementById(id).addEventListener('change',e=>{GS.meta[LC]=GS.meta[LC]||{};GS.meta[LC][id==='lrep'?'rep':'date']=e.target.value;gsave()});
+ltb.addEventListener('click',e=>{
+  const rs=e.target.closest('[data-res]');
+  if(rs){const g=GS.items.find(i=>i.id===rs.dataset.id);if(!g)return;g.result=rs.dataset.res||null;const y=g.yid&&items.find(x=>x.id===g.yid);
+    if(y){if(g.result==='sold'){y.sold=true;y.state=''}else if(g.result==='unsold'){y.sold=false;y.state=''}else{y.sold=false;y.state='group'}save();drawMine();drawList()}
+    gsave();drawList2();lmsg.textContent=g.result==='unsold'&&y?'「'+g.name+'」已放回 '+y.seat+' 的易圖攤位。':g.result==='sold'?'已記錄售出，減碳 '+g.co2.toFixed(1)+' kg。':'';return}
+  const d=e.target.closest('[data-del]'),ed=e.target.closest('[data-edit]');
+  if(d){if(d.dataset.sure){const g=GS.items.find(i=>i.id===d.dataset.del);const y=g&&g.yid&&items.find(x=>x.id===g.yid);if(y){y.state='';y.gid=null;save();drawMine();drawList()}GS.items=GS.items.filter(i=>i.id!==d.dataset.del);gsave();drawList2()}else{d.dataset.sure=1;d.textContent='確定刪除？'}}
+  if(ed){const i=GS.items.find(x=>x.id===ed.dataset.edit);if(!i)return;location.hash='#register';
+    setTimeout(()=>{resetForm(true);rco.value=i.co;rcode.value=i.code;for(const k of ['owner','dept','name','desc'])rf.elements[k].value=i[k]||'';rprice.value=i.price;
+      Object.assign(R,{cat:i.cat,size:i.size||'s',base:i.base||'life',edit:i.id,adj:i.co2src?null:i.co2,link:null});const sl=document.querySelector('#runsold label[data-v=stall]');if(sl)sl.hidden=!i.yid;
+      rf.querySelector('input[name=cat][value="'+i.cat+'"]').checked=true;rf.querySelector('input[name=cond][value="'+i.cond+'"]').checked=true;
+      for(const f of i.func){const x=rf.querySelector('input[name=func][value="'+f+'"]');if(x)x.checked=true}
+      rf.querySelector('input[name=uns][value="'+i.uns+'"]').checked=true;drawSub();if(document.getElementById('rother'))document.getElementById('rother').value=i.catOther||'';
+      if(i.co2src){document.getElementById('coff').checked=true;document.getElementById('coffbox').hidden=false;document.getElementById('coffv').value=i.co2;document.getElementById('coffs').value=i.co2src}
+      rf.elements.noban.checked=rf.elements.agree.checked=true;document.getElementById('rsubmit').textContent='儲存修改';rmsg.innerHTML='<div class="ok">正在編輯 '+esc(i.code)+'，改完按「儲存修改」。</div>';markSeg();priceHint();drawCO2()},0)}});
+
+// downloads
+let DL=null;(async()=>{try{DL=await claude.use('downloads')}catch(e){}})();
+async function saveFile(name,data,msgEl){
+  try{if(DL){await DL.save({filename:name,data});msgEl.textContent='已存成 '+name+'。';return}}catch(e){if(e&&e.code==='declined'){msgEl.textContent='已取消下載。';return}}
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data]));a.download=name;document.body.appendChild(a);a.click();a.remove();msgEl.textContent='已送出下載：'+name+'。'}catch(e){msgEl.textContent='這個檢視無法下載檔案，請在瀏覽器中開啟本頁再試。'}}
+const lmsg=document.getElementById('lmsg');
+document.getElementById('bk-out').addEventListener('click',()=>saveFile('二手好物市集_登記備份.json',new Blob([JSON.stringify(GS,null,1)],{type:'application/json'}),lmsg));
+document.getElementById('bk-in').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{const o=JSON.parse(t);if(!o||!Array.isArray(o.items))throw 0;let n=0;for(const it of o.items){if(it&&typeof it.code==='string'&&!GS.items.some(i=>i.code===it.code)){GS.items.push(it);n++}}GS.meta=Object.assign({},o.meta||{},GS.meta);gsave();drawList2();lmsg.textContent='匯入 '+n+' 件（編號重複的已略過）。'}).catch(()=>{lmsg.textContent='這個檔案不是登記備份。'});e.target.value=''});
+
+// excel export
+document.getElementById('lexport').addEventListener('click',async()=>{
+  if(!window.ExcelJS){lmsg.textContent='Excel 元件還在載入，請稍候幾秒再按一次。';return}
+  const its=GS.items.filter(i=>i.co===LC).sort((a,b)=>a.code.localeCompare(b.code));
+  if(!its.length){lmsg.textContent=coName(LC)+'還沒有登記資料。';return}
+  lmsg.textContent='產生 Excel 中…';
+  const buf=await buildXlsx(LC,its,GS.meta[LC]||{});
+  saveFile('二手好物市集_附件_'+coName(LC)+'.xlsx',new Blob([buf]),lmsg)});
+
+async function buildXlsx(co,its,meta){
+  const wb=new ExcelJS.Workbook(),F='Microsoft JhengHei',thin={style:'thin',color:{argb:'FF555555'}},B={top:thin,left:thin,bottom:thin,right:thin};
+  const ps=(o)=>({paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,horizontalCentered:true,margins:{left:.4,right:.4,top:.45,bottom:.45,header:.2,footer:.2},...o});
+  const box=(c,{v='',b=false,s=11,al='left',fill,bd=true,color}={})=>{c.value=v;c.font={name:F,size:s,bold:b,color:color?{argb:color}:undefined};c.alignment={vertical:'middle',horizontal:al,wrapText:true};if(bd)c.border=B;if(fill)c.fill={type:'pattern',pattern:'solid',fgColor:{argb:fill}}};
+  const chk=(opts,on)=>opts.map(o=>(o===on||(Array.isArray(on)&&on.includes(o))?'■':'□')+o).join('　');
+  const coLine=chk(COS.map(c=>c[1]+'('+c[0]+')'),coName(co)+'('+co+')');
+  const catLine=it=>{const nm=['小家電','書籍','未拆封禮品','生活雜品','文具','玩具'],on=it.cat==='other'?null:gcat(it.cat)[1];return nm.map(n=>(n===on?'■':'□')+n+(n===on&&it.cat==='appl'?'（'+SIZES.find(s=>s[0]===it.size)[1]+'）':'')+(n===on&&it.cat==='gift'?'（歸入'+(BASES.find(s=>s[0]===it.base)||['',''])[1]+'）':'')).join('　')+'　'+(it.cat==='other'?'■其他：'+it.catOther:'□其他：＿＿＿＿')};
+  // 附件一
+  const w1=wb.addWorksheet('附件一 登記表',{pageSetup:ps()});
+  w1.columns=[{width:16},{width:40},{width:16},{width:27}];
+  let r=1;
+  its.forEach((it,ix)=>{
+    const row=(h)=>{w1.getRow(r).height=h;return r++};
+    let x=row(30);w1.mergeCells(x,1,x,4);box(w1.getCell(x,1),{v:'★ 聖誕好物傳下去 ★　商品選品登記表（每件一張）',b:true,s:14,al:'center',fill:'FFE8F3EC'});
+    const pair=(h,l1,v1,l2,v2)=>{const y=row(h);box(w1.getCell(y,1),{v:l1,b:true,fill:'FFF3F4F7'});box(w1.getCell(y,2),{v:v1});box(w1.getCell(y,3),{v:l2,b:true,fill:'FFF3F4F7'});box(w1.getCell(y,4),{v:v2})};
+    const wide=(h,l,v)=>{const y=row(h);box(w1.getCell(y,1),{v:l,b:true,fill:'FFF3F4F7'});w1.mergeCells(y,2,y,4);box(w1.getCell(y,2),{v})};
+    pair(30,'公司別',coLine,'商品編號',it.code);
+    pair(26,'好物主人姓名',it.owner,'部門／分機',it.dept);
+    wide(26,'品名',it.name);
+    wide(34,'類別',catLine(it));
+    pair(34,'新舊程度',chk(CONDS.map(c=>c.replace(' ','')),it.cond.replace(' ','')),'功能檢查',chk(FUNCS,it.func));
+    pair(34,'售價','NT$ '+it.price+' 元（5–100 元，以 5 元為級距）','預估碳排放量',it.co2.toFixed(1)+' kg CO2e'+(it.co2src?'（來源：'+it.co2src+'）':'（參考附件四）'));
+    wide(44,'商品說明／瑕疵',it.desc);
+    wide(26,'未售出處理',chk(UNS.map(u=>u[1]),(UNS.find(u=>u[0]===it.uns)||UNS[0])[1]));
+    x=row(32);w1.mergeCells(x,1,x,4);box(w1.getCell(x,1),{v:'好物主人聲明：本人確認上述物品為本人所有，同意提供於二手好物市集義賣，所得作為公益用途；未售出物品依勾選方式處理。',s:10});
+    pair(40,'好物主人簽名／日期','','收件代表簽名／日期','');
+    if(ix%2===0&&ix<its.length-1){x=row(30);w1.mergeCells(x,1,x,4);box(w1.getCell(x,1),{v:'－－－－－－－－－－－－－－－ 裁切線 －－－－－－－－－－－－－－－',al:'center',bd:false,color:'FF888888'})}
+    else if(ix<its.length-1){w1.getRow(r-1).addPageBreak()}
+  });
+  // 附件二
+  const w2=wb.addWorksheet('附件二 選品清冊',{pageSetup:ps()});
+  w2.columns=[{width:8},{width:30},{width:14},{width:8},{width:12},{width:10},{width:12},{width:16}];
+  w2.mergeCells('A1:H1');box(w2.getCell('A1'),{v:'附件二　子公司商品選品清冊',b:true,s:15,al:'center',bd:false});w2.getRow(1).height=28;
+  w2.mergeCells('A2:H2');box(w2.getCell('A2'),{v:'每家子公司 20 件，活動前由各公司自行保管；編號前請加公司代碼（天擘 A、天眼 B、天思 C、準線 D、易圖 E）',s:9,bd:false,al:'center',color:'FF555555'});
+  const dt=meta.date?meta.date.split('-'):['',' ',' '];
+  w2.mergeCells('A3:H3');box(w2.getCell('A3'),{v:'公司別：'+chk(COS.map(c=>c[1]),coName(co))+'　　負責代表：'+(meta.rep||'＿＿＿＿＿＿')+'　　繳交日期：'+(meta.date?dt[0]+' 年 '+(+dt[1])+' 月 '+(+dt[2])+' 日':'＿＿年＿＿月＿＿日'),bd:false});w2.getRow(3).height=24;
+  const hd=['編號','品名','類別','新舊','好物主人','售價(元)','碳排(kg CO2e)','備註'];
+  hd.forEach((h,i)=>box(w2.getCell(4,i+1),{v:h,b:true,al:'center',fill:'FFE8F3EC'}));w2.getRow(4).height=30;
+  const n=Math.max(20,Math.ceil(its.length/10)*10),byCode=Object.fromEntries(its.map(i=>[i.code,i]));
+  const short=it=>({appl:'小家電',book:'書籍',gift:'禮品',life:'生活雜品',stat:'文具',toy:'玩具',other:it.catOther||'其他'})[it.cat];
+  for(let k=1;k<=n;k++){const y=4+k,c=co+String(k).padStart(2,'0'),it=byCode[c];w2.getRow(y).height=22;
+    const vals=[c,it?it.name:'',it?short(it):'',it?it.cond.replace('全新／未拆封','全新').replace(' 成新以上','成'):'',it?it.owner:'',it?it.price:'',it?it.co2:'',it?({donate:'未售出捐贈',stall:'未售出回易圖攤位'}[it.uns]||'')+(it.co2src?(it.uns!=='return'?'；':'')+'碳排依'+it.co2src:''):''];
+    vals.forEach((v,i)=>box(w2.getCell(y,i+1),{v,al:i===0||i===3?'center':i>=5&&i<=6?'right':'left',s:10}));
+    if(it)w2.getCell(y,7).numFmt='0.0'}
+  const extra=its.filter(i=>+i.code.slice(1)>n);
+  const ty=5+n;w2.getRow(ty).height=24;
+  ['合計','共 '+its.length+' 件','','','',its.reduce((a,i)=>a+i.price,0),r1(its.reduce((a,i)=>a+i.co2,0)),''].forEach((v,i)=>box(w2.getCell(ty,i+1),{v,b:true,al:i>=5&&i<=6?'right':i===0?'center':'left',fill:'FFF3F4F7'}));
+  w2.getCell(ty,7).numFmt='0.0';
+  w2.mergeCells(ty+1,1,ty+1,8);box(w2.getCell(ty+1,1),{v:'新舊欄填「全新／9成／8成」；碳排依附件四估算，取至小數點後一位。'+(extra.length?'（另有超出列數的編號未列入）':''),s:9,bd:false,color:'FF555555'});
+  w2.pageSetup.printTitlesRow='4:4';
+  // 附件三
+  const w3=wb.addWorksheet('附件三 商品標籤',{pageSetup:ps()});
+  w3.columns=[{width:44},{width:3},{width:44}];
+  let y=1;
+  for(let k=0;k<its.length;k+=2){
+    const top=y,lines=7;
+    for(let j=0;j<lines;j++)w3.getRow(top+j).height=[24,18,22,22,24,22,16][j];
+    [its[k],its[k+1]].forEach((it,ci)=>{if(!it)return;const col=ci?3:1;
+      const L=[['★ 聖誕好物傳下去 ★',13,true,'FFD62839'],['二手好物市集｜逢甲GIS中心集團',10,false,'FF333333'],['編號：'+it.code+'　提供：'+it.owner,11,false],['品名：'+it.name,11,false],['售價：NT$ '+it.price+' 元',13,true],['預估減碳：'+it.co2.toFixed(1)+' kg CO2e',12,true,'FF1F6F50'],['（估算值：購買同等新品之碳排放量）',9,false,'FF666666']];
+      L.forEach(([v,s,b,c],j)=>{const cell=w3.getCell(top+j,col);cell.value=v;cell.font={name:F,size:s,bold:b,color:c?{argb:c}:undefined};cell.alignment={vertical:'middle',horizontal:j<2||j===6?'center':'left',indent:j>=2&&j<=5?1:0,wrapText:true};
+        cell.border={left:thin,right:thin,top:j===0?thin:undefined,bottom:j===lines-1?thin:undefined}})});
+    y=top+lines;w3.getRow(y).height=14;y++;
+    if((k/2+1)%4===0&&k+2<its.length)w3.getRow(y-1).addPageBreak()}
+  return wb.xlsx.writeBuffer()}
+
+drawList2();resetForm(false);
+
+/* ---------- routing ---------- */
+function show(v){if(v!=='map'&&window.CLOUD)CLOUD.setWhere(null,null);for(const s of document.querySelectorAll('.view'))s.classList.toggle('on',s.id==='v-'+v);for(const a of document.querySelectorAll('nav a'))a.toggleAttribute('aria-current',a.dataset.v===v),a.dataset.v===v&&a.setAttribute('aria-current','page');if(v==='map')render()}
+const route=()=>{const v=(location.hash||'#home').slice(1);show(['home','register','list','map','shop','sell'].includes(v)?v:'home');scrollTo(0,0)};
+addEventListener('hashchange',route);
+/* ---------- cloud hooks ---------- */
+let toastT=0;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,4200)}
+function gate(){
+  const ab=document.getElementById('authbox');
+  if(!CLOUDMODE){ab.hidden=true;return}
+  ab.hidden=false;ab.innerHTML=USER?'<span>'+esc(USER.name)+(ADMIN?' <em>管理員</em>':'')+'</span><button type="button" data-logout>登出</button>':'<button type="button" data-login>登入</button>';
+  document.querySelector('nav a[data-v=list]').hidden=!ADMIN;
+  for(const b of document.querySelectorAll('[data-local]'))b.style.display='none';
+  for(const [v,need] of [['sell','user'],['register','user'],['list','admin']]){
+    const sec=document.getElementById('v-'+v);let g=sec.querySelector(':scope>.gate');if(!g){g=document.createElement('div');g.className='gate';sec.querySelector('h1').after(g)}
+    const ok=need==='admin'?ADMIN:!!USER;sec.classList.toggle('locked',!ok);g.hidden=ok;
+    g.innerHTML=ok?'':USER?'<b>這一頁只有管理員可以查看。</b><p>如果你需要權限，請聯絡活動負責人。</p>':'<b>請先用公司 Google 帳號登入</b><p>登入後就能上架你的物品、登記集團好物，也能按「我有興趣」通知賣家。</p><button class="btn" type="button" data-login>用公司 Google 帳號登入</button>'}}
+document.addEventListener('click',e=>{if(e.target.closest('[data-login]')){window.CLOUD?CLOUD.login():toast('雲端還在連線中，請稍候再試。')}if(e.target.closest('[data-logout]')&&window.CLOUD)CLOUD.logout()});
+const refreshAll=()=>{drawMine();drawList();drawList2();if(document.getElementById('v-map').classList.contains('on'))render()};
+Object.assign(window.MKT,{toast,
+  cloudReady(){gate()},
+  setItems(arr){for(const x of arr)x.mine=!!USER&&x.sellerUid===USER.uid;items=arr;refreshAll()},
+  setNames(m){NAMES=m;for(const d of DEPS)for(const t of d.seats)t.name=m[t.id]||t.orig;refreshAll()},
+  setGroup(arr,meta){if(arr)GS.items=arr;if(meta)GS.meta=meta;drawList2()},
+  setInterests(set,by){INT=new Set(set);INTBY=by||{};refreshAll()},
+  setUser(u,admin){USER=u;ADMIN=!!admin;for(const x of items)x.mine=!!USER&&x.sellerUid===USER.uid;
+    if(u&&!rf.elements.owner.value)rf.elements.owner.value=u.name;gate();refreshAll()},
+  setPeople(list){PEOPLE=list;if(window.M3D&&M3D.people)M3D.people(list);if(!st.dep&&document.getElementById('v-map').classList.contains('on'))renderPanel()},
+  people:()=>PEOPLE});
+gate();
+drawCats();drawList();drawMine();gCheck();route();
+}
+</script>
+<script type="module" src="js/office3d.js"></script>
+<script>if(window.APP_CONFIG&&APP_CONFIG.firebase){const s=document.createElement('script');s.type='module';s.src='js/cloud.js';s.onerror=()=>window.MKT&&MKT.toast('無法連線到雲端資料庫，請重新整理。');document.body.appendChild(s)}</script>
+</body>
+</html>

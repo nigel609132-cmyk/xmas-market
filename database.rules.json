@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "presence": {
+      ".read": true,
+      "$id": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['t']) && newData.child('dep').isString() && newData.child('dep').val().length < 12 && newData.child('seat').isString() && newData.child('seat').val().length < 12 && (!newData.child('name').exists() || (auth != null && newData.child('name').val() === auth.token.name))"
+      }
+    }
+  }
+}

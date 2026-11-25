@@ -1,0 +1,65 @@
+rules_version = '2';
+// 聖誕易圖洽辦公室市集：Firestore 安全規則
+// 只允許公司網域 gis.fcu.edu.tw 的帳號寫入；管理員名單放在 Firestore 的 config/admins 文件
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function companyUser() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower().split('@')[1] == 'gis.fcu.edu.tw';
+    }
+    function isAdmin() {
+      return companyUser()
+        && request.auth.token.email.lower() in get(/databases/$(database)/documents/config/admins).data.emails;
+    }
+    function me() { return request.auth.uid; }
+
+    // 管理員名單：只能從 Firebase 主控台修改
+    match /config/{doc} {
+      allow read: if companyUser();
+      allow write: if false;
+    }
+
+    // 易圖上架的物品：所有人可看；本人或管理員可改
+    match /items/{id} {
+      allow read: if true;
+      allow create: if companyUser()
+        && request.resource.data.sellerUid == me()
+        && request.resource.data.title is string && request.resource.data.title.size() <= 60
+        && (!('photo' in request.resource.data) || request.resource.data.photo.size() < 400000);
+      allow update: if (companyUser() && resource.data.sellerUid == me() && request.resource.data.sellerUid == me()
+          && (!('photo' in request.resource.data) || request.resource.data.photo.size() < 400000))
+        || isAdmin();
+      allow delete: if (companyUser() && resource.data.sellerUid == me()) || isAdmin();
+    }
+
+    // 座位上的名字：所有人可看；登入的同仁可改
+    match /seats/{seat} {
+      allow read: if true;
+      allow write: if companyUser() && request.resource.data.by == me()
+        && request.resource.data.name is string && request.resource.data.name.size() <= 12;
+    }
+
+    // 12/21 集團好物登記：登入可看（編號要用）；本人或管理員可改
+    match /group/{id} {
+      allow read: if companyUser();
+      allow create: if companyUser() && request.resource.data.ownerUid == me();
+      allow update: if (companyUser() && resource.data.ownerUid == me() && request.resource.data.ownerUid == me()) || isAdmin();
+      allow delete: if (companyUser() && resource.data.ownerUid == me()) || isAdmin();
+    }
+    match /meta/{doc} {
+      allow read: if companyUser();
+      allow write: if isAdmin();
+    }
+
+    // 我有興趣：本人、賣家、管理員可看；只能用自己的身分建立
+    match /interests/{id} {
+      allow read: if companyUser() && (resource.data.uid == me() || resource.data.sellerUid == me() || isAdmin());
+      allow create: if companyUser() && request.resource.data.uid == me()
+        && id == request.resource.data.itemId + '_' + me();
+      allow delete: if companyUser() && resource.data.uid == me();
+      allow update: if false;
+    }
+  }
+}
