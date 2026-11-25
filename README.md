@@ -3,14 +3,14 @@
 易圖 12/22–24 辦公室二手市集，以及 12/21 集團 ESG 二手好物市集的好物登記、選品清冊。
 
 - 網站：https://nigel609132-cmyk.github.io/xmas-market/
-- 純前端，放在 GitHub Pages；資料放 Firebase（Firestore、Realtime Database），登入用公司 Google 帳號（@gis.fcu.edu.tw）。
+- 純前端，放在 GitHub Pages；資料放 Firebase（Firestore、Realtime Database），登入用公司 Google 帳號（@gis.fcu.edu.tw、@geosense.tw 或 @easymap.tw）。
 
 ## 權限
 
 | 頁面 | 誰可以用 |
 | --- | --- |
 | 活動介紹、空間地圖、逛賣場 | 所有人（不用登入） |
-| 我要上架、好物登記、我有興趣 | 用 @gis.fcu.edu.tw 帳號登入的同仁 |
+| 我要上架、好物登記、我有興趣 | 用 @gis.fcu.edu.tw、@geosense.tw 或 @easymap.tw 帳號登入的同仁 |
 | 選品清冊、Excel 匯出、管理員選入 | 管理員（名單放在 Firestore `config/admins`） |
 
 ## 檔案

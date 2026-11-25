@@ -12,7 +12,8 @@ const auth = A.getAuth(app), db = F.getFirestore(app);
 const rtdb = C.firebase.databaseURL ? R.getDatabase(app) : null;
 
 let user = null, isAdmin = false;
-const domainOK = e => !C.auth.domain || String(e || '').toLowerCase().endsWith('@' + C.auth.domain.toLowerCase());
+const DOMAINS = (C.auth.domains || (C.auth.domain ? [C.auth.domain] : [])).map(d => d.toLowerCase());
+const domainOK = e => !DOMAINS.length || DOMAINS.includes(String(e || '').toLowerCase().split('@')[1]);
 const warn = e => console.warn(e);
 const fail = e => { console.error(e); M.toast(e && e.code === 'permission-denied' ? '沒有權限做這個動作。' : '儲存失敗，請稍後再試。'); };
 
@@ -29,13 +30,13 @@ function provider() {
     return p;
   }
   const p = new A.GoogleAuthProvider();
-  p.setCustomParameters(Object.assign({prompt: 'select_account'}, C.auth.domain ? {hd: C.auth.domain} : {}));
+  p.setCustomParameters(Object.assign({prompt: 'select_account'}, DOMAINS.length === 1 ? {hd: DOMAINS[0]} : {}));
   return p;
 }
 async function login() {
   try {
     const r = await A.signInWithPopup(auth, provider());
-    if (!domainOK(r.user.email)) { await A.signOut(auth); M.toast('請用公司信箱（@' + C.auth.domain + '）登入。'); }
+    if (!domainOK(r.user.email)) { await A.signOut(auth); M.toast('請用公司信箱（' + DOMAINS.map(d => '@' + d).join(' 或 ') + '）登入。'); }
   } catch (e) { if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') M.toast('登入失敗：' + (e.code || e.message)); }
 }
 const logout = () => A.signOut(auth);

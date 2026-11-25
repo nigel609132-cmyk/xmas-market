@@ -16,6 +16,6 @@ window.APP_CONFIG = {
   auth: {
     provider: "google",   // "google" 或 "microsoft"（公司用 Microsoft 365 時）
     tenant: "",           // provider 為 microsoft 時，填公司的 Azure 租用戶 ID（可留空）
-    domain: "gis.fcu.edu.tw"  // 只允許這個網域的信箱登入；留空代表不限制
+    domains: ["gis.fcu.edu.tw", "geosense.tw", "easymap.tw"]  // 只允許這些網域的信箱登入；空陣列代表不限制
   }
 };
