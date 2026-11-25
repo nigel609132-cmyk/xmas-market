@@ -91,6 +91,26 @@ function saveGroup(GS) {
   if (isAdmin && mj !== rMeta) { rMeta = mj; F.setDoc(F.doc(db, 'meta', 'group'), m).catch(fail); }
 }
 
+/* ---------- 座位綁定：users/{uid} 記自己的座位，seatClaims/{seat} 保證一個座位只綁一人 ---------- */
+function subSeat() {
+  unsubs.push(F.onSnapshot(F.doc(db, 'users', user.uid), d => M.setMySeat(d.exists() ? d.data() : null), e => { warn(e); M.setMySeat(null); }));
+  unsubs.push(F.onSnapshot(F.collection(db, 'seatClaims'), snap => { const m = {}; snap.forEach(d => m[d.id] = d.data()); M.setClaims(m); }, warn));
+}
+async function claimSeat(seat, name) {
+  if (!user) return false;
+  try {
+    const b = F.writeBatch(db), t = Date.now();
+    b.set(F.doc(db, 'users', user.uid), {seat, name, email: user.email, t});
+    b.set(F.doc(db, 'seatClaims', seat), {uid: user.uid, name, email: user.email, t});
+    b.set(F.doc(db, 'seats', seat), {name, by: user.uid, t});
+    await b.commit(); return true;
+  } catch (e) { fail(e); return false; }
+}
+async function unclaimSeat(seat, uid) {
+  try { const b = F.writeBatch(db); b.delete(F.doc(db, 'seatClaims', seat)); if (uid) b.delete(F.doc(db, 'users', uid)); await b.commit(); return true; }
+  catch (e) { fail(e); return false; }
+}
+
 /* ---------- 我有興趣 interests ---------- */
 let mine = new Set(), onMine = {};
 function subInterests() {
@@ -146,11 +166,11 @@ A.onAuthStateChanged(auth, async u => {
   user = u; isAdmin = false;
   if (u) {
     try { const d = await F.getDoc(F.doc(db, 'config', 'admins')); isAdmin = d.exists() && (d.data().emails || []).map(e => e.toLowerCase()).includes(u.email.toLowerCase()); } catch (e) {}
-    subGroup(); subInterests();
-  } else { M.setGroup([], {}); mine = new Set(); onMine = {}; M.setInterests(mine, onMine); }
+    subGroup(); subInterests(); subSeat();
+  } else { M.setMySeat(null); M.setClaims({}); M.setGroup([], {}); mine = new Set(); onMine = {}; M.setInterests(mine, onMine); }
   M.setUser(u ? {uid: u.uid, name: u.displayName || u.email, email: u.email} : null, isAdmin);
   presence();
 });
 
-window.CLOUD = {login, logout, saveItems, saveName, saveGroup, setInterest, setWhere};
+window.CLOUD = {login, logout, saveItems, saveName, saveGroup, setInterest, setWhere, claimSeat, unclaimSeat};
 M.cloudReady();

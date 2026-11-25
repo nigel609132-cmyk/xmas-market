@@ -260,10 +260,11 @@ table.ref td:first-child{font-weight:700}
 @media(max-width:640px){.m3d{height:520px}.m3d-log{width:auto;right:auto;max-width:calc(100% - 20px)}.m3d-log ol{display:none}.m3d-log.min ol{display:block}.m3d-hint,.m3d-tools [data-t=spin]{display:none}.m3d-tools{left:10px;justify-content:flex-start}.m3d-tools button{padding:5px 9px;min-height:34px}.m3d-pop{width:auto;right:10px}.m3d-pop:not([hidden])~.m3d-log{display:none}}
 
 nav a[hidden]{display:none!important}
-.authbox{display:flex;align-items:center;gap:8px;font-size:14px}.authbox em{font-style:normal;background:#f2c14e;color:#14532d;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700;margin-left:4px}
+.authbox{margin-inline-start:auto;display:flex;align-items:center;gap:8px;font-size:14px}.authbox em{font-style:normal;background:#f2c14e;color:#14532d;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700;margin-left:4px}
 .authbox button{background:#fff;color:#14532d;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;min-height:38px}
 .view.locked>*:not(h1):not(.gate){display:none!important}
-.gate[hidden]{display:none}.gate{max-width:560px;margin:18px 0;padding:22px;border:1px solid var(--line);border-radius:18px;background:var(--card)}.gate b{font-size:18px}.gate p{color:var(--mute);margin:6px 0 14px}
+.gate[hidden]{display:none}.claim{max-width:620px;margin:18px 0;padding:22px;border:2px solid #c8102e;border-radius:18px;background:light-dark(#fff8f8,#2a1416);display:grid;gap:12px}.claim h2{margin:0}.claim p{margin:0}
+select:disabled,input[readonly]{background:var(--soft);color:var(--ink);opacity:1}.gate{max-width:560px;margin:18px 0;padding:22px;border:1px solid var(--line);border-radius:18px;background:var(--card)}.gate b{font-size:18px}.gate p{color:var(--mute);margin:6px 0 14px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#14532d;color:#fff;padding:12px 18px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:99;max-width:min(560px,calc(100% - 32px));font-weight:500}
 .online{display:flex;align-items:center;gap:6px;margin:0 0 10px}.online i{width:8px;height:8px;border-radius:50%;background:#2fa36b;box-shadow:0 0 0 3px rgba(47,163,107,.2)}
 .intby{color:#d62839}
@@ -406,6 +407,7 @@ nav a[hidden]{display:none!important}
     </div>
     <p class="loc" id="lmsg"></p>
     <div class="scroll"><table class="list stack" id="ltable"><thead><tr><th>編號</th><th>品名</th><th>類別</th><th>新舊</th><th>好物主人</th><th class="num">售價</th><th class="num">碳排 kg</th><th>未售出</th><th>12/21 結果</th><th></th></tr></thead><tbody></tbody></table></div>
+    <div class="pickbox" id="claimadm" hidden><h2>座位綁定</h2><p class="loc">同仁第一次登入時自己選座位，選了就鎖定。選錯或被別人佔用時，按「解除綁定」，對方下次進「我要上架」就能重新選。</p><div id="claimlist"></div></div>
     <div class="pickbox"><h2>管理員選入：符合條件的易圖上架商品</h2><p class="loc">同仁在易圖上架、售價 5–100 元且為 5 的倍數的商品都列在這裡。按「選入」會帶到好物登記，補好類別就加入 12/21 集團市集；12/21 沒賣出，標記「未售出」就回到原本的攤位。</p><div id="pick"></div></div>
     <div class="backup" data-local><span class="loc">登記資料只存在這台電腦的瀏覽器裡，記得定期下載備份；換電腦時用「匯入備份」帶過去。</span><button class="btn sm ghost" id="bk-out" type="button">下載備份</button><label class="btn sm ghost" for="bk-in">匯入備份</label><input id="bk-in" type="file" accept=".json,application/json" hidden></div>
   </section>
@@ -437,6 +439,7 @@ nav a[hidden]{display:none!important}
   <section id="v-sell" class="view">
     <h1>我要上架</h1>
     <p class="sub">填好物品資訊，攤位就會出現在你的座位上。</p>
+    <div class="claim" id="claim" hidden></div>
     <div class="sellwrap">
       <form id="f" novalidate>
         <div id="okbox"></div>
@@ -463,6 +466,7 @@ nav a[hidden]{display:none!important}
           <label>座位<select class="field" name="seat" id="sseat"></select></label>
         </div>
         <label>你的名字<small>選座位會帶入座位圖上的名字，可自行修改</small><input class="field" name="seller" required maxlength="12"></label>
+        <p class="loc" id="myseat"></p>
         <div><button class="btn" type="submit">上架到我的攤位</button></div>
       </form>
       <div class="mine"><h2>我的攤位</h2><div id="mine"></div></div>
@@ -472,7 +476,7 @@ nav a[hidden]{display:none!important}
 <script src="js/config.js"></script>
 <script>
 {
-const CLOUDMODE=!!(window.APP_CONFIG&&APP_CONFIG.firebase);let USER=null,ADMIN=false,INTBY={},PEOPLE=[];
+const CLOUDMODE=!!(window.APP_CONFIG&&APP_CONFIG.firebase);let USER=null,ADMIN=false,INTBY={},PEOPLE=[],MYSEAT=undefined,CLAIMS={};
 const SEATS={"606":[["606-01",2.51,1.81,0,"廷柔"],["606-02",3.76,1.81,0,"筱晴"],["606-03",6.69,1.88,0,"佳薇"],["606-04",10.88,1.88,0,"玉德"],["606-05",13.13,1.89,0,"雅齡"],["606-06",2.03,3.75,1,""],["606-07",4.07,3.84,0,"則宇"],["606-08",6.32,3.82,0,"嘉珉"],["606-09",7.0,3.84,0,"敬翰"],["606-10",9.48,3.82,0,"歆評"],["606-11",10.2,3.82,0,"建森"],["606-12",12.63,3.79,0,"盧志"],["606-13",13.32,3.82,0,"芝伶"],["606-14",15.75,3.74,0,"浿禎"],["606-15",2.03,5.49,1,""],["606-16",4.04,5.49,1,""],["606-17",6.34,5.51,0,"衣淇"],["606-18",7.05,5.52,0,"冠廷"],["606-19",9.54,5.51,0,"品印"],["606-20",10.17,5.51,0,"育如"],["606-21",12.59,5.51,0,"乃皜"],["606-22",13.32,5.52,0,"志展"],["606-23",15.78,5.52,0,"依瑾"]],"614":[["614-01",1.7,1.99,0,"朝棋"],["614-02",3.98,1.97,0,"暐尊"],["614-03",0.34,3.6,0,"亭恩"],["614-04",2.93,3.63,0,"逸平"],["614-05",3.62,3.67,1,""],["614-06",6.24,3.31,0,"泓任"],["614-07",0.34,5.43,0,"芳佑"],["614-08",2.91,5.43,0,"子淮"],["614-09",3.68,5.43,0,"少茜"],["614-10",6.29,5.47,0,"承維"]],"620":[["620-01",4.13,1.21,1,""],["620-02",4.93,1.21,1,""],["620-03",7.52,1.32,0,"羽茜"],["620-04",8.28,1.26,0,"琬馨"],["620-05",10.96,1.17,0,"佳均"],["620-06",4.15,2.47,1,""],["620-07",4.91,2.47,1,""],["620-08",11.76,1.76,0,"玉真"],["620-09",7.54,2.97,0,"偉華"],["620-10",8.28,2.93,0,"柏瑩"],["620-11",10.89,2.93,0,"琬婷"],["620-12",4.93,5.42,0,"璦菱"],["620-13",7.57,5.42,1,""],["620-14",8.32,5.44,0,"珮綺"],["620-15",10.9,5.42,0,"惠羽"],["620-16",4.15,6.3,0,"佩伃"],["620-17",7.57,7.13,1,""],["620-18",8.3,7.11,0,"佳雯"],["620-19",11.69,6.41,0,"靖雅"],["620-20",4.95,7.18,0,"榮浤"],["620-21",10.9,7.15,0,"珮茹"]],"618":[["618-01",6.06,1.39,0,"佑耕"],["618-02",9.27,1.39,0,"銘賢"],["618-03",13.88,1.41,0,"志偉"],["618-04",3.67,3.21,1,""],["618-05",6.19,3.21,1,""],["618-06",6.89,3.21,1,""],["618-07",9.32,3.16,0,"守陽"],["618-08",10.05,3.18,0,"金億"],["618-09",12.57,3.27,0,"冠穎"],["618-10",13.28,3.27,0,"建安"],["618-11",15.76,3.18,0,"弘霖"],["618-12",2.96,4.86,0,"崇恩"],["618-13",6.15,4.89,1,""],["618-14",6.91,4.89,0,"奕洋"],["618-15",9.34,4.88,0,"育萱"],["618-16",10.05,4.89,0,"陳瑋"],["618-17",12.57,4.89,0,"凱鈞"],["618-18",13.28,4.89,0,"冠閔"],["618-19",15.74,4.89,0,"忠晏"]],"604-1":[["604-1-01",1.8,2.9,0,"處長"]]};
 const DEPS=[
  {id:'606',name:'專管辦公室',color:'#7aa2ff',x:3.6,y:0,w:16.3,d:6.7},
@@ -675,7 +679,7 @@ sdep.addEventListener('change',fillSeats);fillSeats();
 f.addEventListener('change',e=>{if(e.target.name==='mode'){document.getElementById('plab').hidden=e.target.value!=='sell'}});
 document.getElementById('photo').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const cv=document.createElement('canvas'),m=360,sc=Math.min(1,m/Math.max(im.width,im.height));cv.width=im.width*sc;cv.height=im.height*sc;cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);photo=cv.toDataURL('image/jpeg',.8);pv.innerHTML='<img alt="預覽" src="'+photo+'">'};im.src=rd.result};rd.readAsDataURL(file)});
 f.addEventListener('submit',e=>{
-  e.preventDefault();const v=Object.fromEntries(new FormData(f));
+  e.preventDefault();const v=Object.fromEntries(new FormData(f));if(CLOUDMODE&&MYSEAT){v.dep=sdep.value;v.seat=sseat.value;v.seller=MYSEAT.name}
   if(!v.title.trim()||!v.seller.trim()){okbox.innerHTML='<div class="ok">請填寫物品名稱和你的名字。</div>';return}
   const it={id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:v.title.trim(),cat:v.cat,mode:v.mode,price:Math.max(0,+v.price||0),seller:v.seller.trim(),dep:v.dep,seat:v.seat,desc:v.desc.trim()||'歡迎到座位看貨。',cond:v.cond,photo,mine:true,sold:false};
   items.push(it);save();
@@ -963,6 +967,7 @@ function gate(){
   if(!CLOUDMODE){ab.hidden=true;return}
   ab.hidden=false;ab.innerHTML=USER?'<span>'+esc(USER.name)+(ADMIN?' <em>管理員</em>':'')+'</span><button type="button" data-logout>登出</button>':'<button type="button" data-login>登入</button>';
   document.querySelector('nav a[data-v=list]').hidden=!ADMIN;
+  drawClaim();
   for(const b of document.querySelectorAll('[data-local]'))b.style.display='none';
   for(const [v,need] of [['sell','user'],['register','user'],['list','admin']]){
     const sec=document.getElementById('v-'+v);let g=sec.querySelector(':scope>.gate');if(!g){g=document.createElement('div');g.className='gate';sec.querySelector('h1').after(g)}
@@ -970,13 +975,35 @@ function gate(){
     g.innerHTML=ok?'':USER?'<b>這一頁只有管理員可以查看。</b><p>如果你需要權限，請聯絡活動負責人。</p>':'<b>請先用公司 Google 帳號登入</b><p>登入後就能上架你的物品、登記集團好物，也能按「我有興趣」通知賣家。</p><button class="btn" type="button" data-login>用公司 Google 帳號登入</button>'}}
 document.addEventListener('click',e=>{if(e.target.closest('[data-login]')){window.CLOUD?CLOUD.login():toast('雲端還在連線中，請稍候再試。')}if(e.target.closest('[data-logout]')&&window.CLOUD)CLOUD.logout()});
 const refreshAll=()=>{drawMine();drawList();drawList2();if(document.getElementById('v-map').classList.contains('on'))render()};
+function drawClaim(){
+  const box=document.getElementById('claim'),wrap=document.querySelector('#v-sell .sellwrap'),need=CLOUDMODE&&USER&&MYSEAT===null;
+  box.hidden=!need;wrap.style.display=need||(CLOUDMODE&&USER&&MYSEAT===undefined)?'none':'';
+  if(CLOUDMODE&&USER&&MYSEAT){const d=DEPS.find(x=>x.seats.some(t=>t.id===MYSEAT.seat));if(d){sdep.value=d.id;fillSeats();sseat.value=MYSEAT.seat;f.seller.value=MYSEAT.name}
+    sdep.disabled=sseat.disabled=true;f.seller.readOnly=true;document.getElementById('myseat').innerHTML='你的座位：<b>'+esc(d?d.name:'')+' '+esc(MYSEAT.seat)+' '+esc(MYSEAT.name)+'</b>（座位有誤請聯絡管理員）'}
+  else{sdep.disabled=sseat.disabled=false;f.seller.readOnly=false;const m=document.getElementById('myseat');if(m)m.textContent=''}
+  if(need&&!box.dataset.built){box.dataset.built=1;
+    box.innerHTML='<h2>先綁定你的座位</h2><p class="loc">第一次上架要先選你的座位，選了就會鎖定，之後上架都會自動放在這個攤位。</p><div class="two"><label>辦公室<select class="field" id="cdep">'+DEPS.map(d=>'<option value="'+d.id+'">'+d.name+'</option>').join('')+'</select></label><label>座位<select class="field" id="cseat"></select></label></div><label>你的名字<small>會顯示在座位和攤位上</small><input class="field" id="cname" maxlength="12"></label><div><button class="btn" type="button" id="cgo">這是我的座位</button></div><p class="loc" id="cmsg"></p>';
+    const cd=box.querySelector('#cdep'),cs=box.querySelector('#cseat'),cn=box.querySelector('#cname');
+    const fill=()=>{const d=dep(cd.value);cs.innerHTML=d.seats.filter(t=>!t.vacant).map(t=>'<option value="'+t.id+'"'+(CLAIMS[t.id]?' disabled':'')+'>'+t.id+' '+esc(t.orig||'')+(CLAIMS[t.id]?'（已綁定）':'')+'</option>').join('');pick()};
+    const pick=()=>{const t=seatOf(cs.value);cn.value=(t&&t.orig)||USER.name||''};
+    cd.onchange=fill;cs.onchange=pick;fill();
+    box.querySelector('#cgo').onclick=()=>{const s=cs.value,n=cn.value.trim();if(!s||!n){box.querySelector('#cmsg').textContent='請選座位並填名字。';return}
+      if(CLAIMS[s]){box.querySelector('#cmsg').textContent='這個座位已經被綁定，選錯了請聯絡管理員。';return}
+      CLOUD.claimSeat(s,n).then(ok=>{if(ok)toast('已綁定 '+s+'，可以開始上架了！')})}}
+  if(need&&box.dataset.built){const cs=box.querySelector('#cseat');for(const o of cs.options){o.disabled=!!CLAIMS[o.value]}}
+  const adm=document.getElementById('claimadm');adm.hidden=!(CLOUDMODE&&ADMIN);
+  if(ADMIN){const rows=Object.entries(CLAIMS).sort((a,b)=>a[0].localeCompare(b[0]));
+    document.getElementById('claimlist').innerHTML=rows.length?rows.map(([s,c])=>'<div class="mini"><div class="av" style="background:'+hue(c.name||s)+';width:44px;height:44px">'+esc((c.name||'?').slice(-1))+'</div><div><b>'+esc(s)+' '+esc(c.name||'')+'</b><span class="loc">'+esc(c.email||'')+'</span></div><button class="btn sm ghost" data-unclaim="'+esc(s)+'">解除綁定</button></div>').join(''):'<div class="empty">還沒有人綁定座位。</div>'}}
+document.getElementById('claimlist').addEventListener('click',e=>{const b=e.target.closest('[data-unclaim]');if(!b)return;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='確定解除？';return}CLOUD.unclaimSeat(b.dataset.unclaim,CLAIMS[b.dataset.unclaim].uid).then(ok=>ok&&toast('已解除 '+b.dataset.unclaim+' 的綁定。'))});
 Object.assign(window.MKT,{toast,
+  setMySeat(v){MYSEAT=v;gate()},
+  setClaims(m){CLAIMS=m;drawClaim()},
   cloudReady(){gate()},
   setItems(arr){for(const x of arr)x.mine=!!USER&&x.sellerUid===USER.uid;items=arr;refreshAll()},
   setNames(m){NAMES=m;for(const d of DEPS)for(const t of d.seats)t.name=m[t.id]||t.orig;refreshAll()},
   setGroup(arr,meta){if(arr)GS.items=arr;if(meta)GS.meta=meta;drawList2()},
   setInterests(set,by){INT=new Set(set);INTBY=by||{};refreshAll()},
-  setUser(u,admin){USER=u;ADMIN=!!admin;for(const x of items)x.mine=!!USER&&x.sellerUid===USER.uid;
+  setUser(u,admin){USER=u;ADMIN=!!admin;if(!u)MYSEAT=undefined;for(const x of items)x.mine=!!USER&&x.sellerUid===USER.uid;
     if(u&&!rf.elements.owner.value)rf.elements.owner.value=u.name;gate();refreshAll()},
   setPeople(list){PEOPLE=list;if(window.M3D&&M3D.people)M3D.people(list);if(!st.dep&&document.getElementById('v-map').classList.contains('on'))renderPanel()},
   people:()=>PEOPLE});

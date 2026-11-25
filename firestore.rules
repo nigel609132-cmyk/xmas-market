@@ -14,6 +14,8 @@ service cloud.firestore {
         && request.auth.token.email.lower() in get(/databases/$(database)/documents/config/admins).data.emails;
     }
     function me() { return request.auth.uid; }
+    function mySeat() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.seat; }
+    function hasSeat() { return exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
 
     // 管理員名單：只能從 Firebase 主控台修改
     match /config/{doc} {
@@ -26,9 +28,11 @@ service cloud.firestore {
       allow read: if true;
       allow create: if companyUser()
         && request.resource.data.sellerUid == me()
+        && hasSeat() && request.resource.data.seat == mySeat()
         && request.resource.data.title is string && request.resource.data.title.size() <= 60
         && (!('photo' in request.resource.data) || request.resource.data.photo.size() < 400000);
       allow update: if (companyUser() && resource.data.sellerUid == me() && request.resource.data.sellerUid == me()
+          && request.resource.data.seat == resource.data.seat
           && (!('photo' in request.resource.data) || request.resource.data.photo.size() < 400000))
         || isAdmin();
       allow delete: if (companyUser() && resource.data.sellerUid == me()) || isAdmin();
@@ -37,8 +41,27 @@ service cloud.firestore {
     // 座位上的名字：所有人可看；登入的同仁可改
     match /seats/{seat} {
       allow read: if true;
-      allow write: if companyUser() && request.resource.data.by == me()
-        && request.resource.data.name is string && request.resource.data.name.size() <= 12;
+      allow write: if (companyUser() && request.resource.data.by == me()
+          && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.seat == seat
+          && request.resource.data.name is string && request.resource.data.name.size() <= 12)
+        || isAdmin();
+    }
+
+    // 座位綁定：每人一個座位、每個座位一人；只有管理員能解除或改
+    match /users/{uid} {
+      allow read: if companyUser() && (uid == me() || isAdmin());
+      allow create: if companyUser() && uid == me()
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.name is string && request.resource.data.name.size() <= 12
+        && getAfter(/databases/$(database)/documents/seatClaims/$(request.resource.data.seat)).data.uid == me();
+      allow update, delete: if isAdmin();
+    }
+    match /seatClaims/{seat} {
+      allow read: if companyUser();
+      allow create: if companyUser() && request.resource.data.uid == me()
+        && !exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.seat == seat;
+      allow update, delete: if isAdmin();
     }
 
     // 12/21 集團好物登記：登入可看（編號要用）；本人或管理員可改
