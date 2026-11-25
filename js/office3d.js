@@ -137,7 +137,7 @@ function buildSeats(first){
         stallObjs[t.id]={g,pin};
         g.traverse(o=>{if(o.isMesh){o.userData={kind:'seat',dep:d.id,seat:t.id};pick.push(o)}});
       }else g.traverse(o=>{if(o.isMesh)o.userData={kind:'dep',dep:d.id,plain:true,vac:t.vacant}});
-      if(!has){const nt=label(esc(t.vacant?'空位':(t.name&&t.name!=='?'?t.name:t.id.slice(-2))),'nt'+(t.vacant?' v':''),x+.5,1.15,z);nt.userData.dep=d.id;g.add(nt);nameTags.push(nt)}
+      if(!has&&!t.vacant){const nt=label(esc(t.name&&t.name!=='?'?t.name:t.id.slice(-2)),'nt',x+.5,1.15,z);nt.userData.dep=d.id;g.add(nt);nameTags.push(nt)}
       g.userData={dep:d.id,stall:has,id:t.id,x};
       seatLayer.add(g);
       if(first)build.push({o:g,x,small:1});
@@ -260,7 +260,18 @@ function frame(now){
   const p=sg.attributes.position.array;for(let i=0;i<SN;i++){p[i*3+1]-=.018+(i%5)*.004;p[i*3]+=Math.sin(now/1400+i)*.004;if(p[i*3+1]<0)p[i*3+1]=22}sg.attributes.position.needsUpdate=true;
   const pulse=(now%1600)/1600;for(const r of rings){r.scale.setScalar(1+pulse*.5);r.material.opacity=.6*(1-pulse)}
   stepWalkers(Math.min(.1,(now-(lastNow||now))/1000),now);lastNow=now;
-  renderer.render(scene,camera);labelR.render(scene,camera);placePop()}
+  renderer.render(scene,camera);labelR.render(scene,camera);placePop();
+  if(now-(frame.dc||0)>150){frame.dc=now;declutter()}}
+// 名牌互相重疊時，只留比較靠前（畫面下方）的那個；攤位標籤和逛市集的人優先
+function declutter(){
+  const fixed=[],tags=[];
+  for(const id in stallObjs){const e=stallObjs[id].pin.element;if(stallObjs[id].pin.visible&&e.offsetParent)fixed.push(e.getBoundingClientRect())}
+  for(const w of walkers.values()){const e=w.g.userData.lb.element;if(w.g.visible){e.classList.remove('hid');const r=e.getBoundingClientRect();
+    if(fixed.some(f=>!(r.right<f.left-2||r.left>f.right+2||r.bottom<f.top-2||r.top>f.bottom+2)))e.classList.add('hid');else fixed.push(r)}}
+  for(const n of nameTags)if(n.visible&&n.element.style.display!=='none'){n.element.classList.remove('hid');tags.push({e:n.element,r:n.element.getBoundingClientRect()})}
+  tags.sort((a,b)=>b.r.top-a.r.top);
+  const kept=fixed.slice();
+  for(const t of tags){const r=t.r;if(kept.some(f=>!(r.right<f.left-2||r.left>f.right+2||r.bottom<f.top-1||r.top>f.bottom+1)))t.e.classList.add('hid');else kept.push(r)}}
 
 /* ---------- 即時在線的人（逛市集的小人） ---------- */
 const walkers=new Map(),WCOL=[0x3b6fb6,0x2f8f57,0x8e5bb5,0xd98b2b,0x3a9aa6,0x6b7a8f];

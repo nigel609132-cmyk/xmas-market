@@ -151,12 +151,26 @@ function writeWhere() {
 }
 function setWhere(dep, seat) { if (dep === where.dep && seat === where.seat) return; where = {dep, seat}; writeWhere(); }
 if (rtdb) {
-  R.onValue(R.ref(rtdb, 'presence'), snap => {
-    const list = [], now = Date.now();
-    snap.forEach(c => { if (meRef && c.key === meRef.key) return; const v = c.val() || {}; if (v.t && now - v.t > 6 * 3600e3) return; list.push({id: c.key, name: v.name || '', dep: v.dep || null, seat: v.seat || null}); });
-    M.setPeople(list);
-  });
-  setInterval(writeWhere, 5 * 60e3); // 每 5 分鐘更新時間，避免被當成離線殘留
+  // 同一個人開多個分頁、或斷線沒清掉的舊紀錄，只顯示一個；超過 3 分鐘沒更新的視為離線
+  let last = null, off = 0;
+  R.onValue(R.ref(rtdb, '.info/serverTimeOffset'), s => { off = s.val() || 0; });
+  const show = () => {
+    if (!last) return;
+    const byName = new Map(), anon = [], now = Date.now() + off, myName = user && user.displayName;
+    last.forEach(c => {
+      if (meRef && c.key === meRef.key) return;
+      const v = c.val() || {};
+      if (!v.t || now - v.t > 3 * 60e3) return;
+      const p = {id: c.key, name: v.name || '', dep: v.dep || null, seat: v.seat || null, t: v.t};
+      if (!p.name) return anon.push(p);
+      if (p.name === myName) return;
+      const o = byName.get(p.name); if (!o || o.t < p.t) byName.set(p.name, p);
+    });
+    M.setPeople([...byName.values(), ...anon].map(p => (p.id = p.name ? 'n:' + p.name : p.id, p)));
+  };
+  R.onValue(R.ref(rtdb, 'presence'), snap => { last = snap; show(); });
+  setInterval(writeWhere, 60e3); // 每分鐘回報一次，讓別人知道你還在
+  setInterval(show, 30e3);
 }
 
 /* ---------- 登入狀態 ---------- */
