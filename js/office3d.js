@@ -264,12 +264,10 @@ function frame(now){
   stepWalkers(Math.min(.1,(now-(lastNow||now))/1000),now);lastNow=now;
   renderer.render(scene,camera);labelR.render(scene,camera);placePop();
   if(now-(frame.dc||0)>150){frame.dc=now;declutter()}}
-// 名牌互相重疊時，只留比較靠前（畫面下方）的那個；攤位標籤和逛市集的人優先
+// 座位名牌互相重疊時，只留比較靠前（畫面下方）的那個；攤位標籤優先。逛市集的人的名牌不參與，不會把座位名牌擠掉
 function declutter(){
   const fixed=[],tags=[];
   for(const id in stallObjs){const e=stallObjs[id].pin.element;if(stallObjs[id].pin.visible&&e.offsetParent)fixed.push(e.getBoundingClientRect())}
-  for(const w of walkers.values()){const e=w.g.userData.lb.element;if(w.g.visible){e.classList.remove('hid');const r=e.getBoundingClientRect();
-    if(fixed.some(f=>!(r.right<f.left-2||r.left>f.right+2||r.bottom<f.top-2||r.top>f.bottom+2)))e.classList.add('hid');else fixed.push(r)}}
   for(const n of nameTags)if(n.visible&&n.element.style.display!=='none'){n.element.classList.remove('hid');tags.push({e:n.element,r:n.element.getBoundingClientRect()})}
   tags.sort((a,b)=>b.r.top-a.r.top);
   const kept=fixed.slice();
@@ -281,7 +279,7 @@ const hsh=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))|0;return
 function walkerMesh(p){const g=new THREE.Group(),c=WCOL[hsh(p.id)%WCOL.length];
   g.add(cyl(.12,.15,.5,c,0,0,0));g.add(sph(.13,SKIN,0,.64,0));g.add(cyl(.15,.15,.07,0xd62839,0,.5,0));
   if(hsh(p.id)%2)g.add(cone(.12,.24,0xd62839,0,.71,0),sph(.045,0xffffff,0,.96,0));
-  const lb=label(esc(p.name||'訪客'),'wk'+(p.name?'':' anon'),0,1.25,0);g.add(lb);g.userData.lb=lb;return g}
+  const lb=label(esc(p.name||'訪客'),'wk'+(p.name?'':' anon'),0,1.05,0);g.add(lb);g.userData.lb=lb;return g}
 function targetFor(w){const p=w.p,d=M.dep(p.dep);if(!d)return null;
   if(p.seat&&seatPos[p.seat]){const k=hsh(p.id);return seatPos[p.seat].clone().add(new THREE.Vector3(-.35+(k%5)*.18,0,.85+(k%3)*.15))}
   return new THREE.Vector3(d.x+.6+Math.random()*(d.w-1.2),0,d.y+.6+Math.random()*(d.d-1.2))}
