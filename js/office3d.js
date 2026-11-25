@@ -118,8 +118,10 @@ const DESK=mat(0xe2b47f),DESKV=mat(0xcfc6bb),LEG=mat(0xb7854f),MON=mat(0x2b2f3f)
 const CLOTH=mat(0xc8283a),CLOTHT=mat(0xfff3dc);
 let seatKey='',seatPos={},nameTags=[],stallObjs={},rings=[];
 const hueCol=n=>{let h=0;for(const ch of n)h=(h*31+ch.charCodeAt(0))%360;return new THREE.Color().setHSL(h/360,.5,.55)};
+// CSS2D 名牌是獨立的 HTML 元素：整組重建時要自己移除，不然舊名牌會留在畫面上
+function dropLabels(o){o.traverse(c=>{if(c.isCSS2DObject&&c.element.parentNode)c.element.parentNode.removeChild(c.element)})}
 function buildSeats(first){
-  seatLayer.clear();seatPos={};nameTags=[];stallObjs={};rings=[];pick.length=pick.filter(p=>p.userData.kind==='dep').length;
+  dropLabels(seatLayer);seatLayer.clear();seatPos={};nameTags=[];stallObjs={};rings=[];pick.length=pick.filter(p=>p.userData.kind==='dep').length;
   const live=M.live();
   for(const d of M.DEPS){const st=M.stallsOf(d);
     for(const t of d.seats){
@@ -290,7 +292,7 @@ function people(list){
     const moved=w.p.dep!==p.dep||w.p.seat!==p.seat;w.p=p;
     if(moved||!w.t){if(w.p.dep!==p.dep){}w.t=targetFor(w)}
     w.g.userData.lb.element.textContent=p.name||'訪客'}
-  for(const [id,w] of walkers)if(!keep.has(id)){world.remove(w.g);walkers.delete(id)}}
+  for(const [id,w] of walkers)if(!keep.has(id)){dropLabels(w.g);world.remove(w.g);walkers.delete(id)}}
 function stepWalkers(dt,now){
   for(const w of walkers.values()){
     w.g.visible=w.p.dep===M.st.dep;
