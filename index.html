@@ -264,10 +264,12 @@ nav a[hidden]{display:none!important}
 .authbox{margin-inline-start:auto;display:flex;align-items:center;gap:8px;font-size:14px}.authbox .bell{position:relative;display:inline-flex;align-items:center;gap:6px;background:#d62839;color:#fff;text-decoration:none;border-radius:999px;padding:6px 12px;font-weight:700;animation:ring 2.4s ease-in-out infinite}.authbox .bell span{font-weight:500;font-size:13px}.authbox .bell::after{content:'';position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:#f2c14e;border:2px solid #14532d}
 @keyframes ring{0%,100%{transform:none}5%,15%{transform:rotate(-6deg)}10%,20%{transform:rotate(6deg)}25%{transform:none}}
 @media(max-width:640px){.authbox .bell span{display:none}}
+.intlist{border:2px solid #d62839;border-radius:16px;padding:10px 14px;margin:0 0 14px;background:light-dark(#fff8f8,#2a1416)}.intlist .ih{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}.intlist .ih .btn{margin-left:auto}
+.intlist .ir{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px dashed var(--line)}.intlist .ir .loc{display:block}.intlist .ir.done{opacity:.6}.intlist .ib{display:flex;gap:6px;flex:none}
 .authbox em{font-style:normal;background:#f2c14e;color:#14532d;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700;margin-left:4px}
 .authbox button{background:#fff;color:#14532d;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;min-height:38px}
 .view.locked>*:not(h1):not(.gate){display:none!important}
-.gate[hidden]{display:none}.claim{max-width:620px;margin:18px 0;padding:22px;border:2px solid #c8102e;border-radius:18px;background:light-dark(#fff8f8,#2a1416);display:grid;gap:12px}.claim h2{margin:0}.claim p{margin:0}
+.gate[hidden]{display:none}.claim[hidden]{display:none!important}.claim{max-width:620px;margin:18px 0;padding:22px;border:2px solid #c8102e;border-radius:18px;background:light-dark(#fff8f8,#2a1416);display:grid;gap:12px}.claim h2{margin:0}.claim p{margin:0}
 select:disabled,input[readonly]{background:var(--soft);color:var(--ink);opacity:1}.gate{max-width:560px;margin:18px 0;padding:22px;border:1px solid var(--line);border-radius:18px;background:var(--card)}.gate b{font-size:18px}.gate p{color:var(--mute);margin:6px 0 14px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#14532d;color:#fff;padding:12px 18px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:99;max-width:min(560px,calc(100% - 32px));font-weight:500}
 .online{display:flex;align-items:center;gap:6px;margin:0 0 10px}.online i{width:8px;height:8px;border-radius:50%;background:#2fa36b;box-shadow:0 0 0 3px rgba(47,163,107,.2)}
@@ -473,7 +475,7 @@ select:disabled,input[readonly]{background:var(--soft);color:var(--ink);opacity:
         <p class="loc" id="myseat"></p>
         <div><button class="btn" type="submit">上架到我的攤位</button></div>
       </form>
-      <div class="mine"><h2>我的攤位</h2><div id="mine"></div></div>
+      <div class="mine"><h2>我的攤位</h2><div id="intbox"></div><div id="mine"></div></div>
     </div>
   </section>
 </main>
@@ -707,7 +709,16 @@ f.addEventListener('input',gCheck);f.addEventListener('change',gCheck);
 function toGroup(it){location.hash='#register';setTimeout(()=>prefillFromStall(it),0)}
 okbox.addEventListener('click',e=>{const b=e.target.closest('[data-goto]');if(b){const i=items.find(x=>x.id===b.dataset.goto);goSeat(i.dep,i.seat)}});
 const mine=document.getElementById('mine');
-function drawMine(){const m=items.filter(i=>i.mine);mine.innerHTML=m.length?m.map(i=>'<div class="mini'+(i.sold?' sold':'')+'">'+thumb(i)+'<div><b>'+esc(i.title)+'</b><span class="loc">'+dep(i.dep).name+' '+esc(i.seat)+(i.sold?' · 已成交':'')+(INTBY[i.id]?' · <b class="intby">有興趣：'+esc(INTBY[i.id].join('、'))+'</b>':'')+(i.state==='group'?' · <b>'+(i.forced?'已被選入 12/21 集團市集':'12/21 在集團市集')+'</b>':'')+'</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+(!i.sold&&i.state!=='group'&&i.mode==='sell'&&i.price>=5&&i.price<=100&&i.price%5===0&&!i.gid?'<button class="btn sm ghost" data-g="'+i.id+'">報名集團市集</button>':'')+'<button class="btn sm ghost" data-t="'+i.id+'">'+(i.sold?'重新上架':'標記成交')+'</button><button class="btn sm ghost" data-del="'+i.id+'">下架</button></div></div>').join(''):'<div class="empty">還沒有上架的物品，左邊填一件試試。</div>';drawPick()}
+function intMail(it,x){return 'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(x.email)+'&su='+encodeURIComponent('Re:【聖誕市集】你對「'+it.title+'」有興趣')+'&body='+encodeURIComponent(x.name+' 你好：\n\n謝謝你對「'+it.title+'」有興趣！\n\n'+(USER?USER.name:''))}
+function drawInt(){const box=document.getElementById('intbox');if(!box)return;
+  const rows=[];for(const id in INTBY){const it=items.find(x=>x.id===id&&x.mine);if(!it)continue;for(const x of INTBY[id])rows.push({it,x})}
+  rows.sort((a,b)=>(a.x.replied-b.x.replied)||(b.x.t-a.x.t));const open=rows.filter(r=>!r.x.replied);
+  box.innerHTML=rows.length?'<div class="intlist"><div class="ih"><b>🔔 有興趣的人</b><span class="loc">'+(open.length?open.length+' 則還沒回覆':'都回覆了')+'</span>'+(open.length>1?'<button type="button" class="btn sm ghost" data-rall>全部標為已回覆</button>':'')+'</div>'+
+   rows.map(({it,x})=>'<div class="ir'+(x.replied?' done':'')+'"><div><b>'+esc(x.name)+'</b> 對「'+esc(it.title)+'」有興趣<span class="loc">'+esc(x.email||'')+'</span></div><div class="ib">'+(x.email?'<a class="btn sm ghost" target="_blank" rel="noopener" href="'+esc(intMail(it,x))+'">回信</a>':'')+'<button type="button" class="btn sm'+(x.replied?' ghost on':'')+'" data-rep="'+esc(x.id)+'" data-v="'+(x.replied?0:1)+'">'+(x.replied?'✓ 已回覆':'標記已回覆')+'</button></div></div>').join('')+'</div>':''}
+document.getElementById('intbox').addEventListener('click',e=>{const r=e.target.closest('[data-rep]'),all=e.target.closest('[data-rall]');if(!window.CLOUD)return;
+  if(r)CLOUD.markReplied([r.dataset.rep],r.dataset.v==='1');
+  if(all){const ids=[];for(const id in INTBY)for(const x of INTBY[id])if(!x.replied)ids.push(x.id);CLOUD.markReplied(ids,true).then(ok=>ok&&toast('已全部標為已回覆。'))}});
+function drawMine(){drawInt();const m=items.filter(i=>i.mine);mine.innerHTML=m.length?m.map(i=>'<div class="mini'+(i.sold?' sold':'')+'">'+thumb(i)+'<div><b>'+esc(i.title)+'</b><span class="loc">'+dep(i.dep).name+' '+esc(i.seat)+(i.sold?' · 已成交':'')+('')+(i.state==='group'?' · <b>'+(i.forced?'已被選入 12/21 集團市集':'12/21 在集團市集')+'</b>':'')+'</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+(!i.sold&&i.state!=='group'&&i.mode==='sell'&&i.price>=5&&i.price<=100&&i.price%5===0&&!i.gid?'<button class="btn sm ghost" data-g="'+i.id+'">報名集團市集</button>':'')+'<button class="btn sm ghost" data-t="'+i.id+'">'+(i.sold?'重新上架':'標記成交')+'</button><button class="btn sm ghost" data-del="'+i.id+'">下架</button></div></div>').join(''):'<div class="empty">還沒有上架的物品，左邊填一件試試。</div>';drawPick()}
 mine.addEventListener('click',e=>{const g=e.target.closest('[data-g]');if(g){toGroup(items.find(x=>x.id===g.dataset.g));return}const t=e.target.closest('[data-t],[data-del]');if(!t)return;if(t.dataset.t){const i=items.find(x=>x.id===t.dataset.t);i.sold=!i.sold}else items=items.filter(x=>x.id!==t.dataset.del);save();drawMine();drawList()});
 
 /* ---------- faint Christmas village backdrop ---------- */
@@ -974,7 +985,7 @@ let toastT=0;function toast(m){const t=document.getElementById('toast');t.textCo
 function gate(){
   const ab=document.getElementById('authbox');
   if(!CLOUDMODE){ab.hidden=true;return}
-  const nInt=Object.values(INTBY).reduce((a,v)=>a+v.length,0);
+  const nInt=Object.values(INTBY).reduce((a,v)=>a+v.filter(x=>!x.replied).length,0);
   ab.hidden=false;ab.innerHTML=USER?(nInt?'<a class="bell" href="#sell" title="有人對你的商品有興趣">🔔 <b>'+nInt+'</b><span>有人對你的商品有興趣</span></a>':'')+'<span>'+esc(USER.name)+(ADMIN?' <em>管理員</em>':'')+'</span><button type="button" data-logout>登出</button>':'<button type="button" data-login>登入</button>';
   document.querySelector('nav a[data-v=list]').hidden=!ADMIN;
   drawClaim();
@@ -1013,7 +1024,7 @@ Object.assign(window.MKT,{toast,
   setNames(m){NAMES=m;for(const d of DEPS)for(const t of d.seats)t.name=m[t.id]||t.orig;refreshAll()},
   setGroup(arr,meta){if(arr)GS.items=arr;if(meta)GS.meta=meta;drawList2()},
   setInterests(set,by){INT=new Set(set);const old=INTBY;INTBY=by||{};
-    if(window.__intInit){for(const id in INTBY){const was=old[id]||[];for(const n of INTBY[id])if(!was.includes(n)){const it=items.find(x=>x.id===id);toast('🔔 '+n+' 對你的「'+(it?it.title:'商品')+'」有興趣！到「我的攤位」看看')}}}
+    if(window.__intInit){for(const id in INTBY){const was=(old[id]||[]).map(x=>x.id);for(const x of INTBY[id])if(!was.includes(x.id)){const n=x.name;const it=items.find(x=>x.id===id);toast('🔔 '+n+' 對你的「'+(it?it.title:'商品')+'」有興趣！到「我的攤位」看看')}}}
     window.__intInit=!!USER;gate();refreshAll()},
   setUser(u,admin){USER=u;ADMIN=!!admin;if(!u)MYSEAT=undefined;for(const x of items)x.mine=!!USER&&x.sellerUid===USER.uid;
     if(u&&!rf.elements.owner.value)rf.elements.owner.value=u.name;gate();refreshAll()},

@@ -82,7 +82,9 @@ service cloud.firestore {
       allow create: if companyUser() && request.resource.data.uid == me()
         && id == request.resource.data.itemId + '_' + me();
       allow delete: if companyUser() && resource.data.uid == me();
-      allow update: if false;
+      // 賣家只能把這筆標記為已回覆／未回覆，不能改其他內容
+      allow update: if companyUser() && resource.data.sellerUid == me()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replied']);
     }
   }
 }

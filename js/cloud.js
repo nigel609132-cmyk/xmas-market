@@ -118,9 +118,14 @@ function subInterests() {
     mine = new Set(); snap.forEach(d => mine.add(d.data().itemId)); M.setInterests(mine, onMine);
   }, fail));
   unsubs.push(F.onSnapshot(F.query(F.collection(db, 'interests'), F.where('sellerUid', '==', user.uid)), snap => {
-    onMine = {}; snap.forEach(d => { const x = d.data(); (onMine[x.itemId] = onMine[x.itemId] || []).push(x.name || x.email); });
+    onMine = {}; snap.forEach(d => { const x = d.data(); (onMine[x.itemId] = onMine[x.itemId] || []).push({id: d.id, name: x.name || x.email, email: x.email, replied: !!x.replied, t: x.createdAt || 0}); });
     M.setInterests(mine, onMine);
   }, fail));
+}
+// 賣家把「有興趣」標記為已回覆（或取消），只改 replied 這個欄位
+async function markReplied(ids, on) {
+  try { const b = F.writeBatch(db); for (const id of ids) b.update(F.doc(db, 'interests', id), {replied: !!on}); await b.commit(); return true; }
+  catch (e) { fail(e); return false; }
 }
 async function setInterest(it, on) {
   if (!user) { M.toast('登入後才能按「我有興趣」。'); login(); return false; }
@@ -186,5 +191,5 @@ A.onAuthStateChanged(auth, async u => {
   presence();
 });
 
-window.CLOUD = {login, logout, saveItems, saveName, saveGroup, setInterest, setWhere, claimSeat, unclaimSeat};
+window.CLOUD = {login, logout, saveItems, saveName, saveGroup, setInterest, setWhere, claimSeat, unclaimSeat, markReplied};
 M.cloudReady();
