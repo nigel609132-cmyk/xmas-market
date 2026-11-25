@@ -6,8 +6,8 @@ window.APP_CONFIG = {
   firebase: {
     apiKey: "AIzaSyAhr_UMXfhdeAcA2dCXi5afhMkR-s8w1gE",
     authDomain: "xmas-market-d4c19.firebaseapp.com",
-    // 建立 Realtime Database 後，把它的網址填在這裡（即時在線小人需要），例如：
-    // databaseURL: "https://xmas-market-d4c19-default-rtdb.asia-southeast1.firebasedatabase.app",
+    // Realtime Database（即時在線小人）
+    databaseURL: "https://xmas-market-d4c19-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "xmas-market-d4c19",
     storageBucket: "xmas-market-d4c19.firebasestorage.app",
     messagingSenderId: "434275813896",
