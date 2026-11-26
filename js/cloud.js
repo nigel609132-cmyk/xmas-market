@@ -141,6 +141,8 @@ async function setInterest(it, on) {
 
 /* ---------- 即時在線（Realtime Database） ---------- */
 let meRef = null, where = {dep: null, seat: null};
+// 雲端模組比頁面晚載入：如果使用者已經點進辦公室，先補上目前位置，不然別人會看不到他
+{ const v = document.getElementById('v-map'); if (v && v.classList.contains('on') && M.st && M.st.dep) where = {dep: M.st.dep, seat: M.st.seat || null}; }
 function presence() {
   if (!rtdb) return;
   if (meRef) R.remove(meRef);
