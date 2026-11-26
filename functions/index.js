@@ -23,10 +23,10 @@ exports.notifySeller = onDocumentCreated(
     const who = it.name || it.email;
     const mail = nodemailer.createTransport({service: 'gmail', auth: {user: SMTP_USER.value(), pass: SMTP_PASS.value()}});
     await mail.sendMail({
-      from: `聖誕易圖洽辦公室市集 <${SMTP_USER.value()}>`,
+      from: `集團ESG x 易圖二手交換市集 <${SMTP_USER.value()}>`,
       to: item.sellerEmail,
       replyTo: it.email,
       subject: `🎄 ${who} 對你的「${item.title}」有興趣`,
-      text: `${item.seller} 你好：\n\n${who}（${it.email}）對你在聖誕易圖洽辦公室市集上架的「${item.title}」有興趣。\n直接回覆這封信就能聯絡對方，或在 Teams 上找他聊聊。\n\n市集網址：${SITE}#sell\n`,
+      text: `${item.seller} 你好：\n\n${who}（${it.email}）對你在集團ESG x 易圖二手交換市集上架的「${item.title}」有興趣。\n直接回覆這封信就能聯絡對方，或在 Teams 上找他聊聊。\n\n市集網址：${SITE}#sell\n`,
     });
   });

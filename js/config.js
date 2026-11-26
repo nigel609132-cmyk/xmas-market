@@ -1,4 +1,4 @@
-// 聖誕易圖洽辦公室市集：正式版設定
+// 集團ESG x 易圖二手交換市集：正式版設定
 // 把 firebase 改成 null 時，網站會用「本機模式」（資料只存在各自的瀏覽器，跟原型一樣）。
 // 填入 Firebase 主控台的 firebaseConfig 後，就會改用 Firebase 雲端資料庫與登入。
 window.APP_CONFIG = {
