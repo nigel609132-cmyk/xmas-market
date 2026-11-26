@@ -293,7 +293,7 @@ select:disabled,input[readonly]{background:var(--soft);color:var(--ink);opacity:
   <nav aria-label="主選單">
     <span class="grp">12/21 集團</span>
     <a href="#home" data-v="home">活動介紹</a>
-    <a href="#register" data-v="register">好物登記</a>
+    <a href="#register" data-v="register" hidden>好物登記</a>
     <a href="#list" data-v="list">選品清冊</a>
     <span class="grp">12/22–24 易圖</span>
     <a href="#map" data-v="map">空間地圖</a>
@@ -312,12 +312,12 @@ select:disabled,input[readonly]{background:var(--soft);color:var(--ink);opacity:
       <h1>聖誕好物傳下去</h1>
       <p class="lead">讓祝福延續、讓地球更健康。把閒置好物變成同事的聖誕禮物，每一件都標示可避免的碳排放。</p>
       <div class="phases">
-        <a class="phase p1" href="#register">
+        <a class="phase p1" href="#sell">
           <span class="ph-tag">第一階段 · 集團</span>
           <b class="ph-date">12/21<small>（一）13:30–16:30</small></b>
           <span class="ph-name">GIS中心聖誕二手好物市集</span>
           <span class="ph-meta">登陽 ICC 22 樓交誼廳 · 五家子公司各 20 件，共 100 件 · 每件 5–100 元</span>
-          <span class="ph-go">前往好物登記 ›</span>
+          <span class="ph-go">前往我要上架 ›</span>
         </a>
         <a class="phase p2" href="#map">
           <span class="ph-tag">第二階段 · 易圖</span>
@@ -332,7 +332,7 @@ select:disabled,input[readonly]{background:var(--soft);color:var(--ink);opacity:
       <div>
         <h2>易圖同仁怎麼參加</h2>
         <div class="flow">
-          <div><b>1. 參加 12/21 集團ESG市集</b><span>由「好物登記」填好減碳資料，售價限制 5–100 元（5 的倍數）；或由「我要上架」勾選「參加 12/21 集團二手好物市集」參加。確認 20 個選品名單後會通知賣家，再請賣家把商品交給乃皜。</span></div>
+          <div><b>1. 參加 12/21 集團ESG市集</b><span>在「我要上架」上架商品，勾選「參加 12/21 集團ESG二手好物市集」，售價需 100 元以內（5 的倍數），並填報好物登記表單。確認 20 個選品名單後會通知賣家，再請賣家把商品交給乃皜。</span></div>
           <div><b>2. 參加 12/22–24 易圖二手市集</b><span>登入公司信箱，綁定座位（攤位），在「我要上架」上架商品（不限金額），就可以在「空間地圖」看到囉。</span></div>
           <div><b>3. 沒賣出就回座位</b><span>如參加 12/21 集團市集未售出，會自動回到你座位上的易圖攤位繼續賣。</span></div>
         </div>
@@ -469,9 +469,9 @@ select:disabled,input[readonly]{background:var(--soft);color:var(--ink);opacity:
           <div class="seg"><label><input type="radio" name="mode" value="sell" checked>售價</label><label><input type="radio" name="mode" value="swap">交換</label><label><input type="radio" name="mode" value="free">免費送</label></div>
         </div>
         <label id="plab">售價（新台幣）<input class="field" name="price" type="number" min="0" step="5" value="50" inputmode="numeric"></label>
-        <fieldset class="gcard" id="gjoin"><legend>🎄 要不要參加 12/21 集團二手好物市集？</legend>
+        <fieldset class="gcard" id="gjoin"><legend>🎄 要不要參加 12/21 集團ESG二手好物市集？</legend>
           <p class="gstate" id="gjoinhint"></p>
-          <div class="gopts"><label><input type="radio" name="joing" value="yes" id="joing"><span><b>參加</b><small>12/21 先在集團市集賣，沒賣出 12/22 起回到我的座位攤位</small></span></label>
+          <div class="gopts"><label><input type="radio" name="joing" value="yes" id="joing"><span><b>參加</b><small>售價需 100 元以內，並填報好物登記表單</small></span></label>
           <label><input type="radio" name="joing" value="no" id="joingno"><span><b>不參加</b><small>只在 12/22–24 易圖座位攤位賣</small></span></label></div>
           <p class="loc">提醒：符合條件的商品，管理員也可能直接選入 12/21 集團市集。</p></fieldset>
         <label>說明<small>想交換什麼、何時方便到座位看貨</small><textarea class="field" name="desc" maxlength="300" placeholder="例如：午休 12:30 後都在座位，可以直接來試打。"></textarea></label>
