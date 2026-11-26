@@ -151,7 +151,8 @@ nav .grp{font-size:12px;color:rgba(255,255,255,.7);padding:0 4px 0 10px}
 .ph-name{font-size:18px;font-weight:700}
 .ph-meta{font-size:14px;color:#5b6075}
 .ph-go{margin-top:6px;font-weight:700;color:#14532d}
-.cols{max-width:860px}
+.cols{max-width:none}
+.cols>div>*:not(.flow){max-width:860px}
 .cols>div+div{margin-top:8px}
 .flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:6px 0 4px}
 .flow div{background:var(--soft);border-radius:14px;padding:14px}
