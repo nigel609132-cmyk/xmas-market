@@ -542,13 +542,9 @@ const thumb=i=>{const c=cat(i.cat);return '<div class="thumb" style="background:
 let INT=new Set();if(!CLOUDMODE)try{INT=new Set(JSON.parse(localStorage.getItem('etu-interest')||'[]'))}catch(e){}
 const askBtn=(i,sm)=>'<button type="button" class="btn sm'+(INT.has(i.id)?' ghost on':'')+'" data-ask="'+esc(i.id)+'" aria-pressed="'+INT.has(i.id)+'">'+(INT.has(i.id)?(sm?'✓ 已通知':'✓ 已通知賣家'):'我有興趣')+'</button>';
 let askNote='';
-function gmailLink(i){const body=i.seller+' 你好：\n\n我在集團ESG x 易圖二手交換市集看到你上架的「'+i.title+'」，很有興趣！\n方便的話，什麼時候可以到你的座位（'+i.seat+'）看看呢？\n\n'+(USER?USER.name:'');
-  return 'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(i.sellerEmail)+'&su='+encodeURIComponent('【聖誕市集】我對你的「'+i.title+'」有興趣')+'&body='+encodeURIComponent(body)}
 function ask(id){const i=items.find(x=>x.id===id);if(!i)return;
   if(CLOUDMODE){if(!window.CLOUD)return toast('雲端還在連線中，請稍候再試。');const on=!INT.has(id);
-    // 要在點擊當下就開新分頁，瀏覽器才不會擋；只有登入、不是自己的商品、而且知道賣家信箱時才開
-    let win=null;if(on&&USER&&i.sellerEmail&&i.sellerUid!==USER.uid){win=window.open(gmailLink(i),'_blank')}
-    CLOUD.setInterest(i,on).then(ok=>{if(!ok){if(win)win.close();return}askNote=on?'已通知 '+i.seller+'，對方會在「我的攤位」看到'+(win?'；也幫你開好寄給對方的 Gmail，確認內容後按傳送就好。':(i.sellerEmail?'。如果 Gmail 沒有自動開啟，請允許這個網站開啟彈出視窗。':'。')):'已取消對「'+i.title+'」的興趣。';if(on)INT.add(id);else INT.delete(id);toast(askNote);drawList();if(st.seat)render()});return}
+    CLOUD.setInterest(i,on).then(ok=>{if(!ok)return;askNote=on?'已通知 '+i.seller+'，對方會在「我的攤位」看到。':'已取消對「'+i.title+'」的興趣。';if(on)INT.add(id);else INT.delete(id);toast(askNote);drawList();if(st.seat)render()});return}
   if(INT.has(id)){INT.delete(id);askNote='已取消對「'+i.title+'」的興趣。'}else{INT.add(id);askNote='已通知 '+i.seller+'：你對「'+i.title+'」有興趣。正式版會自動寄 Email 給賣家。'}
   try{localStorage.setItem('etu-interest',JSON.stringify([...INT]))}catch(e){}
   drawList();if(st.seat)render()}
