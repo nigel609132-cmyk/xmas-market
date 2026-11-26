@@ -274,6 +274,7 @@ nav a[hidden]{display:none!important}
 @media(max-width:640px){.authbox .bell span{display:none}}
 .intlist{border:2px solid #d62839;border-radius:16px;padding:10px 14px;margin:0 0 14px;background:light-dark(#fff8f8,#2a1416)}.intlist .ih{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}.intlist .ih .btn{margin-left:auto}
 .intlist .ir{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px dashed var(--line)}.intlist .ir .loc{display:block}.intlist .ir.done{opacity:.6}.intlist .ib{display:flex;gap:6px;flex:none}
+.intlist .irs{max-height:260px;overflow-y:auto}.intlist.quiet{border-width:1px;border-color:var(--line);background:none}.intlist .idone{background:none;border:0;padding:8px 0 2px;color:var(--mute);font-size:14px;cursor:pointer;min-height:32px}.intlist .idone:hover{color:var(--ink)}
 .tag.grp{background:#fff1c9;color:#8a5a00;margin-left:4px}
 .authbox em{font-style:normal;background:#f2c14e;color:#14532d;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700;margin-left:4px}
 .authbox button{background:#fff;color:#14532d;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;min-height:38px}
@@ -736,12 +737,16 @@ function toGroup(it){location.hash='#register';setTimeout(()=>prefillFromStall(i
 okbox.addEventListener('click',e=>{const b=e.target.closest('[data-goto]');if(b){const i=items.find(x=>x.id===b.dataset.goto);goSeat(i.dep,i.seat)}});
 const mine=document.getElementById('mine');
 function intMail(it,x){return 'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(x.email)+'&su='+encodeURIComponent('Re:【聖誕市集】你對「'+it.title+'」有興趣')+'&body='+encodeURIComponent(x.name+' 你好：\n\n謝謝你對「'+it.title+'」有興趣！\n\n'+(USER?USER.name:''))}
+let SHOWDONE=false;
 function drawInt(){const box=document.getElementById('intbox');if(!box)return;
   const rows=[];for(const id in INTBY){const it=items.find(x=>x.id===id&&x.mine);if(!it)continue;for(const x of INTBY[id])rows.push({it,x})}
-  rows.sort((a,b)=>(a.x.replied-b.x.replied)||(b.x.t-a.x.t));const open=rows.filter(r=>!r.x.replied);
-  box.innerHTML=rows.length?'<div class="intlist"><div class="ih"><b>🔔 有興趣的人</b><span class="loc">'+(open.length?open.length+' 則還沒回覆':'都回覆了')+'</span>'+(open.length>1?'<button type="button" class="btn sm ghost" data-rall>全部標為已回覆</button>':'')+'</div>'+
-   rows.map(({it,x})=>'<div class="ir'+(x.replied?' done':'')+'"><div><b>'+esc(x.name)+'</b> 對「'+esc(it.title)+'」有興趣<span class="loc">'+esc(x.email||'')+'</span></div><div class="ib">'+(x.email?'<a class="btn sm ghost" target="_blank" rel="noopener" href="'+esc(intMail(it,x))+'">回信</a>':'')+'<button type="button" class="btn sm'+(x.replied?' ghost on':'')+'" data-rep="'+esc(x.id)+'" data-v="'+(x.replied?0:1)+'">'+(x.replied?'✓ 已回覆':'標記已回覆')+'</button></div></div>').join('')+'</div>':''}
-document.getElementById('intbox').addEventListener('click',e=>{const r=e.target.closest('[data-rep]'),all=e.target.closest('[data-rall]');if(!window.CLOUD)return;
+  rows.sort((a,b)=>(a.x.replied-b.x.replied)||(b.x.t-a.x.t));const open=rows.filter(r=>!r.x.replied),done=rows.filter(r=>r.x.replied);
+  // 已回覆的預設收起來，只留一行「已回覆 N 則」可以展開；還沒回覆的超過 4 則就在框內捲動
+  const row=({it,x})=>'<div class="ir'+(x.replied?' done':'')+'"><div><b>'+esc(x.name)+'</b> 對「'+esc(it.title)+'」有興趣<span class="loc">'+esc(x.email||'')+'</span></div><div class="ib">'+(x.email?'<a class="btn sm ghost" target="_blank" rel="noopener" href="'+esc(intMail(it,x))+'">回信</a>':'')+'<button type="button" class="btn sm'+(x.replied?' ghost on':'')+'" data-rep="'+esc(x.id)+'" data-v="'+(x.replied?0:1)+'">'+(x.replied?'✓ 已回覆':'標記已回覆')+'</button></div></div>';
+  box.innerHTML=rows.length?'<div class="intlist'+(open.length?'':' quiet')+'"><div class="ih"><b>🔔 有興趣的人</b><span class="loc">'+(open.length?open.length+' 則還沒回覆':'都回覆了')+'</span>'+(open.length>1?'<button type="button" class="btn sm ghost" data-rall>全部標為已回覆</button>':'')+'</div>'+
+   (open.length?'<div class="irs">'+open.map(row).join('')+'</div>':'')+
+   (done.length?'<button type="button" class="idone" data-sd aria-expanded="'+SHOWDONE+'">'+(SHOWDONE?'▾ 收起':'▸ 顯示')+'已回覆 '+done.length+' 則</button>'+(SHOWDONE?'<div class="irs">'+done.map(row).join('')+'</div>':''):'')+'</div>':''}
+document.getElementById('intbox').addEventListener('click',e=>{if(e.target.closest('[data-sd]')){SHOWDONE=!SHOWDONE;drawInt();return}const r=e.target.closest('[data-rep]'),all=e.target.closest('[data-rall]');if(!window.CLOUD)return;
   if(r)CLOUD.markReplied([r.dataset.rep],r.dataset.v==='1');
   if(all){const ids=[];for(const id in INTBY)for(const x of INTBY[id])if(!x.replied)ids.push(x.id);CLOUD.markReplied(ids,true).then(ok=>ok&&toast('已全部標為已回覆。'))}});
 function drawMine(){drawInt();const m=items.filter(i=>i.mine);mine.innerHTML=m.length?m.map(i=>'<div class="mini'+(i.sold?' sold':'')+'">'+thumb(i)+'<div><b>'+esc(i.title)+'</b><span class="loc">'+dep(i.dep).name+' '+esc(i.seat)+(i.sold?' · 已成交':'')+('')+(i.state==='group'?' · <b>'+(i.forced?'已被選入 12/21 集團市集':'12/21 在集團市集')+'</b>':'')+'</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+(!i.sold&&i.state!=='group'&&i.mode==='sell'&&i.price>=5&&i.price<=100&&i.price%5===0&&!i.gid?'<button class="btn sm ghost" data-g="'+i.id+'">報名集團市集</button>':'')+'<button class="btn sm" data-edit="'+i.id+'">編輯</button><button class="btn sm ghost" data-t="'+i.id+'">'+(i.sold?'重新上架':'標記成交')+'</button><button class="btn sm ghost" data-del="'+i.id+'">下架</button></div></div>').join(''):'<div class="empty">還沒有上架的物品，<a href="#sell">去上架第一件</a>。</div>';drawPick()}
