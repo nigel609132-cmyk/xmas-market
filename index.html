@@ -110,6 +110,7 @@ h1{font-size:clamp(28px,4vw,40px);line-height:1.1;margin:0 0 6px;text-wrap:balan
 .card .fb{display:flex;gap:6px}.card .fb .btn{white-space:nowrap}
 .pa{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .btn.on{color:#14532d;border-color:#14532d}
+.btn.ask{background:light-dark(#fdeee9,#3a2320);color:light-dark(#b23a2e,#f3b2a6);border:1px solid light-dark(#f4cfc6,#5a3530)}.btn.ask:hover{background:light-dark(#fbe2db,#462a26)}
 #askmsg:empty{display:none}#askmsg{margin:10px 0 0;color:#14532d;font-weight:500}
 .sold{opacity:.55}
 .empty{padding:40px;text-align:center;color:var(--mute);background:var(--soft);border-radius:18px}
@@ -539,7 +540,7 @@ const stallsOf=d=>[...new Set(live().filter(i=>i.dep===d.id).map(i=>i.seat))];
 const priceTxt=i=>i.mode==='swap'?'<span class="price swap">徵交換</span>':i.mode==='free'?'<span class="price swap">免費送</span>':'<span class="price">NT$'+Number(i.price).toLocaleString()+'</span>';
 const thumb=i=>{const c=cat(i.cat);return '<div class="thumb" style="background:'+c[2]+'">'+(i.photo?'<img alt="" src="'+esc(i.photo)+'">':esc(c[0]==='3c'?'3C':c[1].slice(0,2)))+'</div>'};
 let INT=new Set();if(!CLOUDMODE)try{INT=new Set(JSON.parse(localStorage.getItem('etu-interest')||'[]'))}catch(e){}
-const askBtn=(i,sm)=>'<button type="button" class="btn sm'+(INT.has(i.id)?' ghost on':'')+'" data-ask="'+esc(i.id)+'" aria-pressed="'+INT.has(i.id)+'">'+(INT.has(i.id)?(sm?'✓ 已通知':'✓ 已通知賣家'):'我有興趣')+'</button>';
+const askBtn=(i,sm)=>'<button type="button" class="btn sm'+(INT.has(i.id)?' ghost on':' ask')+'" data-ask="'+esc(i.id)+'" aria-pressed="'+INT.has(i.id)+'">'+(INT.has(i.id)?(sm?'✓ 已通知':'✓ 已通知賣家'):'我有興趣')+'</button>';
 let askNote='';
 function ask(id){const i=items.find(x=>x.id===id);if(!i)return;
   if(CLOUDMODE){if(!window.CLOUD)return toast('雲端還在連線中，請稍候再試。');const on=!INT.has(id);
