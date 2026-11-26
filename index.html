@@ -272,6 +272,7 @@ nav a[hidden]{display:none!important}
 @media(max-width:640px){.authbox .bell span{display:none}}
 .intlist{border:2px solid #d62839;border-radius:16px;padding:10px 14px;margin:0 0 14px;background:light-dark(#fff8f8,#2a1416)}.intlist .ih{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}.intlist .ih .btn{margin-left:auto}
 .intlist .ir{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px dashed var(--line)}.intlist .ir .loc{display:block}.intlist .ir.done{opacity:.6}.intlist .ib{display:flex;gap:6px;flex:none}
+.tag.grp{background:#fff1c9;color:#8a5a00;margin-left:4px}
 .authbox em{font-style:normal;background:#f2c14e;color:#14532d;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700;margin-left:4px}
 .authbox button{background:#fff;color:#14532d;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;min-height:38px}
 .view.locked>*:not(h1):not(.gate){display:none!important}
@@ -494,7 +495,7 @@ select:disabled,input[readonly]{background:var(--soft);color:var(--ink);opacity:
 <script src="js/config.js"></script>
 <script>
 {
-const CLOUDMODE=!!(window.APP_CONFIG&&APP_CONFIG.firebase);let USER=null,ADMIN=false,INTBY={},PEOPLE=[],MYSEAT=undefined,CLAIMS={};
+const PAGE_T=Date.now()-60e3;const CLOUDMODE=!!(window.APP_CONFIG&&APP_CONFIG.firebase);let USER=null,ADMIN=false,INTBY={},PEOPLE=[],MYSEAT=undefined,CLAIMS={};
 const SEATS={"606":[["606-01",2.51,1.81,0,"廷柔"],["606-02",3.76,1.81,0,"筱晴"],["606-03",6.69,1.88,0,"佳薇"],["606-04",10.88,1.88,0,"玉德"],["606-05",13.13,1.89,0,"雅齡"],["606-06",2.03,3.75,1,""],["606-07",4.07,3.84,0,"則宇"],["606-08",6.32,3.82,0,"嘉珉"],["606-09",7.0,3.84,0,"敬翰"],["606-10",9.48,3.82,0,"歆評"],["606-11",10.2,3.82,0,"建森"],["606-12",12.63,3.79,0,"盧志"],["606-13",13.32,3.82,0,"芝伶"],["606-14",15.75,3.74,0,"浿禎"],["606-15",2.03,5.49,1,""],["606-16",4.04,5.49,1,""],["606-17",6.34,5.51,0,"衣淇"],["606-18",7.05,5.52,0,"冠廷"],["606-19",9.54,5.51,0,"品印"],["606-20",10.17,5.51,0,"育如"],["606-21",12.59,5.51,0,"乃皜"],["606-22",13.32,5.52,0,"志展"],["606-23",15.78,5.52,0,"依瑾"]],"614":[["614-01",1.7,1.99,0,"朝棋"],["614-02",3.98,1.97,0,"暐尊"],["614-03",0.34,3.6,0,"亭恩"],["614-04",2.93,3.63,0,"逸平"],["614-05",3.62,3.67,1,""],["614-06",6.24,3.31,0,"泓任"],["614-07",0.34,5.43,0,"芳佑"],["614-08",2.91,5.43,0,"子淮"],["614-09",3.68,5.43,0,"少茜"],["614-10",6.29,5.47,0,"承維"]],"620":[["620-01",4.13,1.21,1,""],["620-02",4.93,1.21,1,""],["620-03",7.52,1.32,0,"羽茜"],["620-04",8.28,1.26,0,"琬馨"],["620-05",10.96,1.17,0,"佳均"],["620-06",4.15,2.47,1,""],["620-07",4.91,2.47,1,""],["620-08",11.76,1.76,0,"玉真"],["620-09",7.54,2.97,0,"偉華"],["620-10",8.28,2.93,0,"柏瑩"],["620-11",10.89,2.93,0,"琬婷"],["620-12",4.93,5.42,0,"璦菱"],["620-13",7.57,5.42,1,""],["620-14",8.32,5.44,0,"珮綺"],["620-15",10.9,5.42,0,"惠羽"],["620-16",4.15,6.3,0,"佩伃"],["620-17",7.57,7.13,1,""],["620-18",8.3,7.11,0,"佳雯"],["620-19",11.69,6.41,0,"靖雅"],["620-20",4.95,7.18,0,"榮浤"],["620-21",10.9,7.15,0,"珮茹"]],"618":[["618-01",6.06,1.39,0,"佑耕"],["618-02",9.27,1.39,0,"銘賢"],["618-03",13.88,1.41,0,"志偉"],["618-04",3.67,3.21,1,""],["618-05",6.19,3.21,1,""],["618-06",6.89,3.21,1,""],["618-07",9.32,3.16,0,"守陽"],["618-08",10.05,3.18,0,"金億"],["618-09",12.57,3.27,0,"冠穎"],["618-10",13.28,3.27,0,"建安"],["618-11",15.76,3.18,0,"弘霖"],["618-12",2.96,4.86,0,"崇恩"],["618-13",6.15,4.89,1,""],["618-14",6.91,4.89,0,"奕洋"],["618-15",9.34,4.88,0,"育萱"],["618-16",10.05,4.89,0,"陳瑋"],["618-17",12.57,4.89,0,"凱鈞"],["618-18",13.28,4.89,0,"冠閔"],["618-19",15.74,4.89,0,"忠晏"]],"604-1":[["604-1-01",1.8,2.9,0,"處長"]]};
 const DEPS=[
  {id:'606',name:'專管辦公室',color:'#7aa2ff',x:3.6,y:0,w:16.3,d:6.7},
@@ -532,7 +533,9 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const dep=id=>DEPS.find(d=>d.id===id);
 const cat=id=>CATS.find(c=>c[0]===id)||CATS[5];
 const seatIds=d=>d.seats.filter(s=>!s.vacant).map(s=>s.id);
-const live=()=>items.filter(i=>!i.sold&&i.state!=='group');
+// 報名 12/21 集團市集的商品也照樣出現在地圖和賣場，只是加上標示
+const live=()=>items.filter(i=>!i.sold);
+const grpTag=i=>i.state==='group'?'<span class="tag grp">12/21 先在集團市集</span>':'';
 const stallsOf=d=>[...new Set(live().filter(i=>i.dep===d.id).map(i=>i.seat))];
 const priceTxt=i=>i.mode==='swap'?'<span class="price swap">徵交換</span>':i.mode==='free'?'<span class="price swap">免費送</span>':'<span class="price">NT$'+Number(i.price).toLocaleString()+'</span>';
 const thumb=i=>{const c=cat(i.cat);return '<div class="thumb" style="background:'+c[2]+'">'+(i.photo?'<img alt="" src="'+esc(i.photo)+'">':esc(c[0]==='3c'?'3C':c[1].slice(0,2)))+'</div>'};
@@ -661,9 +664,9 @@ function renderPanel(){
   const its=live().filter(i=>i.dep===d.id&&i.seat===st.seat);
   if(!its.length){st.seat=null;return renderPanel()}
   const who=its[0].seller;
-  panel.innerHTML='<h2>'+esc(who)+' 的攤位</h2><div class="who"><div class="av" style="background:'+hue(who)+'">'+esc(who.slice(-1))+'</div><div><b>'+d.name+' · 座位 '+esc(st.seat)+'</b><div class="loc">到座位看貨，或先傳訊息聊聊</div></div></div>'+its.map(i=>'<div class="mini">'+thumb(i)+'<div><b>'+esc(i.title)+(i.demo?' <span class="tag">示範</span>':'')+'</b><span class="loc">'+esc(i.desc)+'</span></div><div class="pa">'+priceTxt(i)+askBtn(i)+'</div></div>').join('')+'<p class="loc" id="askmsg" aria-live="polite">'+esc(askNote)+'</p><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn ghost" data-go="dep">回到'+d.name+'</button></div>';askNote=''}
+  panel.innerHTML='<h2>'+esc(who)+' 的攤位</h2><div class="who"><div class="av" style="background:'+hue(who)+'">'+esc(who.slice(-1))+'</div><div><b>'+d.name+' · 座位 '+esc(st.seat)+'</b><div class="loc">到座位看貨，或先傳訊息聊聊</div></div></div>'+its.map(i=>'<div class="mini">'+thumb(i)+'<div><b>'+esc(i.title)+(i.demo?' <span class="tag">示範</span>':'')+' '+grpTag(i)+'</b><span class="loc">'+esc(i.desc)+'</span></div><div class="pa">'+priceTxt(i)+askBtn(i)+'</div></div>').join('')+'<p class="loc" id="askmsg" aria-live="polite">'+esc(askNote)+'</p><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn ghost" data-go="dep">回到'+d.name+'</button></div>';askNote=''}
 
-window.MKT={ask,askBtn,DEPS,OTHER,st,live:()=>live(),stallsOf,dep,esc,thumb,priceTxt,cat,hue,render:()=>render(),nameOf};
+window.MKT={grpTag,ask,askBtn,DEPS,OTHER,st,live:()=>live(),stallsOf,dep,esc,thumb,priceTxt,cat,hue,render:()=>render(),nameOf};
 function goSeat(depId,seat){st.dep=depId;st.seat=seat;location.hash='#map';show('map');render()}
 const act=e=>{
   const t=e.target.closest('[data-dep],[data-seat],[data-go],[data-ask]');if(!t)return;
@@ -686,7 +689,7 @@ cats.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b){fc=
 function drawList(){
   const k=q.value.trim().toLowerCase();
   const r=live().filter(i=>(fc==='all'||i.cat===fc)&&(fdep.value==='all'||i.dep===fdep.value)&&(!k||(i.title+i.seller+i.desc).toLowerCase().includes(k)));
-  list.innerHTML=r.length?r.map(i=>'<article class="card">'+thumb(i)+'<div class="bd"><span class="tag">'+esc(cat(i.cat)[1])+' · '+esc(i.cond)+(i.demo?' · 示範':'')+'</span><h3>'+esc(i.title)+'</h3><span class="loc">'+esc(i.seller)+' · '+dep(i.dep).name+' '+esc(i.seat)+'</span><div class="ft">'+priceTxt(i)+'<span class="fb">'+askBtn(i,1)+'<button class="btn sm ghost" data-goto="'+esc(i.id)+'">去座位</button></span></div></div></article>').join(''):'<div class="empty" style="grid-column:1/-1">找不到符合的物品，換個關鍵字或類別試試。</div>'}
+  list.innerHTML=r.length?r.map(i=>'<article class="card">'+thumb(i)+'<div class="bd"><span class="tag">'+esc(cat(i.cat)[1])+' · '+esc(i.cond)+(i.demo?' · 示範':'')+'</span>'+grpTag(i)+'<h3>'+esc(i.title)+'</h3><span class="loc">'+esc(i.seller)+' · '+dep(i.dep).name+' '+esc(i.seat)+'</span><div class="ft">'+priceTxt(i)+'<span class="fb">'+askBtn(i,1)+'<button class="btn sm ghost" data-goto="'+esc(i.id)+'">去座位</button></span></div></div></article>').join(''):'<div class="empty" style="grid-column:1/-1">找不到符合的物品，換個關鍵字或類別試試。</div>'}
 q.addEventListener('input',drawList);fdep.addEventListener('change',drawList);
 list.addEventListener('click',e=>{const a=e.target.closest('[data-ask]');if(a){ask(a.dataset.ask);return}const b=e.target.closest('[data-goto]');if(!b)return;const i=items.find(x=>x.id===b.dataset.goto);goSeat(i.dep,i.seat)});
 
@@ -1048,7 +1051,7 @@ Object.assign(window.MKT,{toast,
   setNames(m){NAMES=m;for(const d of DEPS)for(const t of d.seats)t.name=m[t.id]||t.orig;refreshAll()},
   setGroup(arr,meta){if(arr)GS.items=arr;if(meta)GS.meta=meta;drawList2()},
   setInterests(set,by){INT=new Set(set);const old=INTBY;INTBY=by||{};
-    if(window.__intInit){for(const id in INTBY){const was=(old[id]||[]).map(x=>x.id);for(const x of INTBY[id])if(!was.includes(x.id)){const n=x.name;const it=items.find(x=>x.id===id);toast('🔔 '+n+' 對你的「'+(it?it.title:'商品')+'」有興趣！到「我的攤位」看看')}}}
+    if(window.__intInit){for(const id in INTBY){const was=(old[id]||[]).map(x=>x.id);for(const x of INTBY[id])if(!was.includes(x.id)&&!x.replied&&x.t>PAGE_T){const n=x.name;const it=items.find(x=>x.id===id);toast('🔔 '+n+' 對你的「'+(it?it.title:'商品')+'」有興趣！到「我的攤位」看看')}}}
     window.__intInit=!!USER;gate();refreshAll()},
   setUser(u,admin){USER=u;ADMIN=!!admin;if(!u)MYSEAT=undefined;for(const x of items)x.mine=!!USER&&x.sellerUid===USER.uid;
     if(u&&!rf.elements.owner.value)rf.elements.owner.value=u.name;gate();refreshAll()},

@@ -188,7 +188,7 @@ function drawPop(){
   const its=M.live().filter(i=>i.seat===id);if(!its.length){pop.hidden=true;return}
   const d=M.dep(its[0].dep);
   pop.innerHTML='<button class="x" aria-label="關閉">×</button><div class="ph"><div class="av" style="background:'+M.hue(its[0].seller)+'">'+esc(its[0].seller.slice(-1))+'</div><div><b>'+esc(its[0].seller)+' 的攤位</b><span>'+esc(d.name)+' · 座位 '+esc(id)+'</span></div></div>'+
-   its.slice(0,3).map(i=>'<div class="pi">'+M.thumb(i)+'<div><b>'+esc(i.title)+'</b><span>'+esc(M.cat(i.cat)[1])+' · '+esc(i.cond||'')+'</span></div><div class="pa">'+M.priceTxt(i)+M.askBtn(i)+'</div></div>').join('')+
+   its.slice(0,3).map(i=>'<div class="pi">'+M.thumb(i)+'<div><b>'+esc(i.title)+'</b><span>'+esc(M.cat(i.cat)[1])+' · '+esc(i.cond||'')+(i.state==='group'?' · <b style="color:#8a5a00">12/21 先在集團市集</b>':'')+'</span></div><div class="pa">'+M.priceTxt(i)+M.askBtn(i)+'</div></div>').join('')+
    (its.length>3?'<p class="more">還有 '+(its.length-3)+' 件，看右側攤位清單</p>':'')+'<p class="hint">按「我有興趣」會通知賣家，也可以直接到 '+esc(id)+' 座位看貨</p>';
   pop.hidden=false;placePop()}
 const v3=new THREE.Vector3();
