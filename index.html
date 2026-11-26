@@ -704,14 +704,15 @@ f.addEventListener('submit',e=>{
   e.preventDefault();const v=Object.fromEntries(new FormData(f));if(CLOUDMODE&&MYSEAT){v.dep=sdep.value;v.seat=sseat.value;v.seller=MYSEAT.name}
   if(!v.title.trim()||!v.seller.trim()){okbox.innerHTML='<div class="ok">請填寫物品名稱和你的名字。</div>';return}
   if(EDIT){const o=items.find(x=>x.id===EDIT);if(o){Object.assign(o,{title:v.title.trim(),cat:v.cat,mode:v.mode,price:Math.max(0,+v.price||0),desc:v.desc.trim()||'歡迎到座位看貨。',cond:v.cond});if(photo)o.photo=photo;if(!CLOUDMODE||!MYSEAT){o.seller=v.seller.trim();o.dep=v.dep;o.seat=v.seat}save();
-    okbox.innerHTML='<div class="ok"><span>已更新「'+esc(o.title)+'」。</span><a class="btn sm" href="#mine">回到我的攤位</a></div>';endEdit(true);drawMine();drawList();return}endEdit()}
+    okbox.innerHTML='<div class="ok"><span>已更新「'+esc(o.title)+'」。</span><a class="btn sm" href="#mine">回到我的攤位</a></div>';endEdit(true);drawMine();drawList();location.hash='#mine';toast('已更新「'+o.title+'」。');return}endEdit()}
   const it={id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:v.title.trim(),cat:v.cat,mode:v.mode,price:Math.max(0,+v.price||0),seller:v.seller.trim(),dep:v.dep,seat:v.seat,desc:v.desc.trim()||'歡迎到座位看貨。',cond:v.cond,photo,mine:true,sold:false};
   items.push(it);save();
   const joinG=v.joing==='yes'&&gOK();
   const t=seatOf(it.seat);if(t){t.name=it.seller;NAMES[it.seat]=it.seller;if(CLOUDMODE){window.CLOUD&&CLOUD.saveName(it.seat,it.seller)}else try{localStorage.setItem('etu-names',JSON.stringify(NAMES))}catch(e){}}
   okbox.innerHTML='<div class="ok"><span>「'+esc(it.title)+'」已上架到 '+dep(it.dep).name+' '+esc(it.seat)+'。</span><span style="display:flex;gap:6px"><button type="button" class="btn sm" data-goto="'+it.id+'">在地圖上看</button><a class="btn sm ghost" href="#mine">我的攤位</a></span></div>';
   f.title.value='';f.desc.value='';photo='';pv.textContent='加照片';resetMode();gTouched=false;drawMine();drawList();gCheck();
-  if(joinG)toGroup(it)});
+  // 上架成功：要參加集團市集就去好物登記，不然直接回到我的攤位
+  if(joinG)toGroup(it);else{location.hash='#mine';toast('「'+it.title+'」已上架到 '+dep(it.dep).name+' '+it.seat+'。')}});
 let EDIT=null;
 // 上架或編輯完，交易方式和售價回到預設，避免下一件沿用上一件的「交換」或價格
 function resetMode(){f.querySelector('input[name=mode][value=sell]').checked=true;f.price.value=50;f.cond.value='九成新';document.getElementById('plab').hidden=false}
