@@ -714,9 +714,11 @@ f.addEventListener('submit',e=>{
   const joinG=v.joing==='yes'&&gOK();
   const t=seatOf(it.seat);if(t){t.name=it.seller;NAMES[it.seat]=it.seller;if(CLOUDMODE){window.CLOUD&&CLOUD.saveName(it.seat,it.seller)}else try{localStorage.setItem('etu-names',JSON.stringify(NAMES))}catch(e){}}
   okbox.innerHTML='<div class="ok"><span>「'+esc(it.title)+'」已上架到 '+dep(it.dep).name+' '+esc(it.seat)+'。</span><span style="display:flex;gap:6px"><button type="button" class="btn sm" data-goto="'+it.id+'">在地圖上看</button><a class="btn sm ghost" href="#mine">我的攤位</a></span></div>';
-  f.title.value='';f.desc.value='';photo='';pv.textContent='加照片';gTouched=false;drawMine();drawList();gCheck();
+  f.title.value='';f.desc.value='';photo='';pv.textContent='加照片';resetMode();gTouched=false;drawMine();drawList();gCheck();
   if(joinG)toGroup(it)});
 let EDIT=null;
+// 上架或編輯完，交易方式和售價回到預設，避免下一件沿用上一件的「交換」或價格
+function resetMode(){f.querySelector('input[name=mode][value=sell]').checked=true;f.price.value=50;f.cond.value='九成新';document.getElementById('plab').hidden=false}
 function startEdit(id){const i=items.find(x=>x.id===id&&x.mine);if(!i)return;EDIT=id;location.hash='#sell';
   setTimeout(()=>{f.title.value=i.title;f.cat.value=i.cat;f.cond.value=i.cond;const m=f.querySelector('input[name=mode][value="'+i.mode+'"]');if(m)m.checked=true;
     document.getElementById('plab').hidden=i.mode!=='sell';f.price.value=i.price;f.desc.value=i.desc||'';photo='';pv.innerHTML=i.photo?'<img alt="目前照片" src="'+esc(i.photo)+'">':'加照片';
@@ -724,7 +726,7 @@ function startEdit(id){const i=items.find(x=>x.id===id&&x.mine);if(!i)return;EDI
     f.classList.add('editing');document.getElementById('gjoin').hidden=true;f.querySelector('button[type=submit]').textContent='儲存修改';
     okbox.innerHTML='<div class="ok"><span>正在編輯「'+esc(i.title)+'」，改完按「儲存修改」。照片不換就不用重選。</span><button type="button" class="btn sm ghost" data-cancel>取消編輯</button></div>';f.title.focus()},0)}
 function endEdit(keepMsg){EDIT=null;f.classList.remove('editing');document.getElementById('gjoin').hidden=false;f.querySelector('button[type=submit]').textContent='上架到我的攤位';
-  f.title.value='';f.desc.value='';photo='';pv.textContent='加照片';if(!keepMsg)okbox.innerHTML='';gCheck()}
+  f.title.value='';f.desc.value='';photo='';pv.textContent='加照片';resetMode();if(!keepMsg)okbox.innerHTML='';gCheck()}
 okbox.addEventListener('click',e=>{if(e.target.closest('[data-cancel]')){endEdit();location.hash='#mine'}});
 function gOK(){const m=f.querySelector('input[name=mode]:checked').value,p=+f.elements.price.value;return m==='sell'&&p>=5&&p<=100&&p%5===0}
 let gTouched=false;
