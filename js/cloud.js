@@ -152,7 +152,15 @@ function writeWhere() {
   if (!meRef) return;
   const v = {t: R.serverTimestamp(), dep: where.dep || '', seat: where.seat || ''};
   if (user && user.displayName) v.name = user.displayName;
-  R.set(meRef, v).catch(() => {});
+  R.set(meRef, v).then(() => { pres.ok = true; pres.err = ''; }).catch(e => presErr('寫入', e));
+}
+// 即時在線出錯時提示一次，方便判斷是不是 Realtime Database 規則沒發布
+const pres = {ok: false, err: '', n: 0};
+let presWarned = false;
+function presErr(what, e) {
+  pres.err = what + '：' + (e && (e.code || e.message) || e);
+  console.error('[presence]', pres.err, e);
+  if (!presWarned) { presWarned = true; M.toast('即時在線功能無法' + what + '（' + (e && (e.code || e.message) || '') + '），請確認 Realtime Database 規則已發布。'); }
 }
 function setWhere(dep, seat) { if (dep === where.dep && seat === where.seat) return; where = {dep, seat}; writeWhere(); }
 if (rtdb) {
@@ -173,7 +181,7 @@ if (rtdb) {
     });
     M.setPeople([...byName.values(), ...anon].map(p => (p.id = p.name ? 'n:' + p.name : p.id, p)));
   };
-  R.onValue(R.ref(rtdb, 'presence'), snap => { last = snap; show(); });
+  R.onValue(R.ref(rtdb, 'presence'), snap => { last = snap; pres.n = snap.size; show(); }, e => presErr('讀取', e));
   setInterval(writeWhere, 60e3); // 每分鐘回報一次，讓別人知道你還在
   setInterval(show, 30e3);
 }
@@ -191,5 +199,5 @@ A.onAuthStateChanged(auth, async u => {
   presence();
 });
 
-window.CLOUD = {login, logout, saveItems, saveName, saveGroup, setInterest, setWhere, claimSeat, unclaimSeat, markReplied};
+window.CLOUD = {presence: pres, login, logout, saveItems, saveName, saveGroup, setInterest, setWhere, claimSeat, unclaimSeat, markReplied};
 M.cloudReady();
