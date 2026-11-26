@@ -49,6 +49,10 @@ h1{font-size:clamp(28px,4vw,40px);line-height:1.1;margin:0 0 6px;text-wrap:balan
 .view{display:none}.view.on{display:block}
 .maprow{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
 .stage{background:var(--soft);border-radius:20px;position:relative;overflow:hidden}
+.maplogo{box-sizing:content-box;position:absolute;top:10px;right:14px;height:44px;width:auto;z-index:5;background:rgba(255,255,255,.88);padding:5px 10px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);pointer-events:none}
+.m3d .m3d-tools{left:10px;right:auto;justify-content:flex-start}
+.stage .crumbs{padding-right:190px}
+@media(max-width:640px){.maplogo{height:30px;padding:3px 7px}.stage .crumbs{padding-right:140px}}
 .crumbs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:12px 14px 0;font-size:15px}
 .crumbs button{background:none;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--blue);font-weight:700;min-height:40px}
 :root[data-theme=dark] .crumbs button{color:#9fb2ff}
@@ -427,6 +431,7 @@ select:disabled,input[readonly]{background:var(--soft);color:var(--ink);opacity:
       <div class="stage">
         <div class="village" id="village" aria-hidden="true"></div>
         <div class="crumbs" id="crumbs"></div>
+        <img class="maplogo" src="img/easymap-logo.png" alt="易圖科技 EASY MAP">
         <svg id="iso" role="img" aria-label="辦公室 2.5D 地圖"></svg><canvas id="snowfx" aria-hidden="true"></canvas>
         <div class="m3d" id="m3d"><div class="m3d-tools"><button type="button" data-v="home">← 回 6F 樓層</button></div><div class="m3d-pop" id="m3dPop" hidden></div><div class="m3d-tip" id="m3dTip" hidden></div><div class="m3d-log" id="m3dLog"></div><div class="m3d-hint">拖曳旋轉 · 滾輪縮放 · 右鍵平移</div></div>
         <div class="legend"><span><i style="background:#d62839"></i>有攤位的座位</span><span><i style="background:#ffffff;border:1px solid #b9bfd3"></i>一般座位</span><span><i style="background:#aeb4c6"></i>空位</span><span>點選或用 Tab 鍵切換，Esc 返回上一層</span></div>
