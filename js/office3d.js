@@ -44,7 +44,7 @@ function cone(r,h,c,x,y,z){const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,14)
 function label(html,cls,x,y,z){const el=document.createElement('div');el.className=cls;el.innerHTML=html;const o=new CSS2DObject(el);o.position.set(x,y,z);return o}
 
 const WARM={'606':0xf4c79e,'614':0xf1dba0,'620':0xeec3c6,'618':0xc3dcc0,'604-1':0xd9cbe9};
-const DOORS={'606':['S',12],'614':['S',23.8],'620':['W',7.5],'618':['N',26.6],'604-1':['S',1.8],'604':['E',7.5],'602-1':['N',4.45],'608':['N',7.85],'610':['N',13],'612':['N',16.75],'616':['N',19.75],'618-1':['N',23.6]};
+const DOORS={'606':['S',4.5],'614':['S',23.8],'620':['W',7.5],'618':['N',26.6],'604-1':['S',1.8],'604':['E',7.5],'602-1':['N',4.45],'608':['N',7.85],'610':['N',13],'612':['N',16.75],'616':['N',19.75],'618-1':['N',23.6]};
 const WALL=mat(0xfffaf1),WALLTOP=mat(0xe9d9c2),T=.14,WH=1.05;
 
 function walls(id,x,y,w,d){
