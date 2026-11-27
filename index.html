@@ -125,6 +125,8 @@ textarea.field{padding:12px 14px;min-height:96px;resize:vertical}
 .seg input{accent-color:var(--coral);width:18px;height:18px}
 .drop{border:2px dashed var(--line);border-radius:14px;padding:16px;display:flex;gap:14px;align-items:center;cursor:pointer}
 .drop .thumb{width:84px;flex:none;font-size:13px;background:var(--soft);color:var(--mute);font-weight:500}
+.done-banner{display:flex;gap:12px;align-items:center;background:light-dark(#e7f6ec,#163322);border:2px solid light-dark(#2e8b57,#4fb37d);border-radius:16px;padding:14px 18px;margin:0 0 16px;animation:pop .35s ease}.done-banner i{font-style:normal;font-size:26px}.done-banner b{display:block;font-size:17px;color:light-dark(#14532d,#9fe0b8)}.done-banner span{color:var(--mute);font-size:14px}
+@keyframes pop{from{transform:scale(.97);opacity:0}to{transform:none;opacity:1}}
 .ok{background:light-dark(#fff3e0,#3a2a12);border-radius:14px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .mine{margin-top:36px}
 .mine h2{font-size:22px;margin:0 0 10px}
@@ -490,7 +492,7 @@ select:disabled,input[readonly]{background:var(--soft);color:var(--ink);opacity:
   <section id="v-mine" class="view">
     <h1>我的攤位</h1>
     <p class="sub">管理你上架的物品：編輯、標記成交、下架，也能看到誰對你的物品有興趣。</p>
-    <div class="minewrap"><div id="intbox"></div><div id="mine"></div><p><a class="btn" href="#sell">＋ 再上架一件</a></p></div>
+    <div class="minewrap"><div id="minemsg" role="status"></div><div id="intbox"></div><div id="mine"></div><p><a class="btn" href="#sell">＋ 再上架一件</a></p></div>
   </section>
 </main>
 <script src="js/config.js"></script>
@@ -705,7 +707,7 @@ f.addEventListener('submit',e=>{
   e.preventDefault();const v=Object.fromEntries(new FormData(f));if(CLOUDMODE&&MYSEAT){v.dep=sdep.value;v.seat=sseat.value;v.seller=MYSEAT.name}
   if(!v.title.trim()||!v.seller.trim()){okbox.innerHTML='<div class="ok">請填寫物品名稱和你的名字。</div>';return}
   if(EDIT){const o=items.find(x=>x.id===EDIT);if(o){Object.assign(o,{title:v.title.trim(),cat:v.cat,mode:v.mode,price:Math.max(0,+v.price||0),desc:v.desc.trim()||'歡迎到座位看貨。',cond:v.cond});if(photo)o.photo=photo;if(!CLOUDMODE||!MYSEAT){o.seller=v.seller.trim();o.dep=v.dep;o.seat=v.seat}save();
-    okbox.innerHTML='<div class="ok"><span>已更新「'+esc(o.title)+'」。</span><a class="btn sm" href="#mine">回到我的攤位</a></div>';endEdit(true);drawMine();drawList();location.hash='#mine';toast('已更新「'+o.title+'」。');return}endEdit()}
+    okbox.innerHTML='<div class="ok"><span>已更新「'+esc(o.title)+'」。</span><a class="btn sm" href="#mine">回到我的攤位</a></div>';endEdit(true);drawMine();drawList();doneBanner('已更新「'+o.title+'」','修改已存好，地圖和逛賣場會同步更新。');return}endEdit()}
   const it={id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:v.title.trim(),cat:v.cat,mode:v.mode,price:Math.max(0,+v.price||0),seller:v.seller.trim(),dep:v.dep,seat:v.seat,desc:v.desc.trim()||'歡迎到座位看貨。',cond:v.cond,photo,mine:true,sold:false};
   items.push(it);save();
   const joinG=v.joing==='yes'&&gOK();
@@ -713,7 +715,7 @@ f.addEventListener('submit',e=>{
   okbox.innerHTML='<div class="ok"><span>「'+esc(it.title)+'」已上架到 '+dep(it.dep).name+' '+esc(it.seat)+'。</span><span style="display:flex;gap:6px"><button type="button" class="btn sm" data-goto="'+it.id+'">在地圖上看</button><a class="btn sm ghost" href="#mine">我的攤位</a></span></div>';
   f.title.value='';f.desc.value='';photo='';pv.textContent='加照片';resetMode();gTouched=false;drawMine();drawList();gCheck();
   // 上架成功：要參加集團市集就去好物登記，不然直接回到我的攤位
-  if(joinG)toGroup(it);else{location.hash='#mine';toast('「'+it.title+'」已上架到 '+dep(it.dep).name+' '+it.seat+'。')}});
+  if(joinG)toGroup(it);else doneBanner('「'+it.title+'」已上架','在 '+dep(it.dep).name+' '+it.seat+' 的攤位，可以到「空間地圖」看看。')});
 let EDIT=null;
 // 上架或編輯完，交易方式和售價回到預設，避免下一件沿用上一件的「交換」或價格
 function resetMode(){f.querySelector('input[name=mode][value=sell]').checked=true;f.price.value=50;f.cond.value='九成新';document.getElementById('plab').hidden=false}
@@ -887,9 +889,13 @@ rf.addEventListener('submit',e=>{
   const old=R.edit&&GS.items.find(i=>i.id===R.edit);if(old){it.yid=old.yid;it.result=old.result}
   if(R.forced)it.by='admin';if(R.link){it.yid=R.link;const y=items.find(x=>x.id===R.link);if(y){y.state='group';y.gid=it.id;y.forced=R.forced||!!y.forced;save();drawMine();drawList()}}
   if(!it.yid&&it.uns==='stall')it.uns='return';
-  const wasEdit=!!R.edit;GS.items=GS.items.filter(i=>i.id!==it.id).concat(it);gsave();
-  rmsg.innerHTML='<div class="ok"><span>'+(wasEdit?'已更新':'已登記')+' '+esc(it.code)+'「'+esc(it.name)+'」，'+it.co2.toFixed(1)+' kg CO₂e。</span><a class="btn sm" href="#list">看清冊</a></div>';
-  resetForm(true);drawList2()});
+  const wasEdit=!!R.edit,byAdmin=R.forced||(wasEdit&&ADMIN);GS.items=GS.items.filter(i=>i.id!==it.id).concat(it);gsave();
+  const msg=(wasEdit?'已更新':'已登記')+' '+it.code+'「'+it.name+'」';
+  resetForm(true);drawList2();rmsg.innerHTML='';
+  // 完成後跳頁：管理員回選品清冊，同仁回我的攤位，並在頁面最上方顯示明顯的完成提示
+  if(byAdmin){location.hash='#list';lmsg.textContent='✓ '+msg+'，'+it.co2.toFixed(1)+' kg CO₂e。';toast('✓ '+msg+'。')}
+  else doneBanner(msg+'，參加 12/21 集團ESG二手好物市集','預估減碳 '+it.co2.toFixed(1)+' kg CO₂e。確認 20 個選品名單後會通知你，再把商品交給乃皜。')});
+function doneBanner(t,sub){location.hash='#mine';const m=document.getElementById('minemsg');m.innerHTML='<div class="done-banner"><i>✅</i><div><b>'+esc(t)+'</b><span>'+esc(sub)+'</span></div></div>';setTimeout(()=>m.scrollIntoView({block:'center'}),50)}
 
 // list
 const lco=document.getElementById('lco'),ltb=document.querySelector('#ltable tbody');
@@ -1010,7 +1016,7 @@ async function buildXlsx(co,its,meta){
 drawList2();resetForm(false);
 
 /* ---------- routing ---------- */
-function show(v){if(v!=='map'&&window.CLOUD)CLOUD.setWhere(null,null);for(const s of document.querySelectorAll('.view'))s.classList.toggle('on',s.id==='v-'+v);for(const a of document.querySelectorAll('nav a'))a.toggleAttribute('aria-current',a.dataset.v===v),a.dataset.v===v&&a.setAttribute('aria-current','page');if(v==='map')render()}
+function show(v){if(v!=='mine'){const m=document.getElementById('minemsg');if(m)m.innerHTML=''}if(v!=='map'&&window.CLOUD)CLOUD.setWhere(null,null);for(const s of document.querySelectorAll('.view'))s.classList.toggle('on',s.id==='v-'+v);for(const a of document.querySelectorAll('nav a'))a.toggleAttribute('aria-current',a.dataset.v===v),a.dataset.v===v&&a.setAttribute('aria-current','page');if(v==='map')render()}
 const route=()=>{const v=(location.hash||'#home').slice(1);show(['home','register','list','map','shop','sell','mine'].includes(v)?v:'home');scrollTo(0,0)};
 addEventListener('hashchange',route);
 /* ---------- cloud hooks ---------- */
