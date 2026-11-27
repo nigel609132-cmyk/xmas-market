@@ -707,6 +707,9 @@ f.addEventListener('submit',e=>{
   e.preventDefault();const v=Object.fromEntries(new FormData(f));if(CLOUDMODE&&MYSEAT){v.dep=sdep.value;v.seat=sseat.value;v.seller=MYSEAT.name}
   if(!v.title.trim()||!v.seller.trim()){okbox.innerHTML='<div class="ok">請填寫物品名稱和你的名字。</div>';return}
   if(EDIT){const o=items.find(x=>x.id===EDIT);if(o){Object.assign(o,{title:v.title.trim(),cat:v.cat,mode:v.mode,price:Math.max(0,+v.price||0),desc:v.desc.trim()||'歡迎到座位看貨。',cond:v.cond});if(photo)o.photo=photo;if(!CLOUDMODE||!MYSEAT){o.seller=v.seller.trim();o.dep=v.dep;o.seat=v.seat}save();
+    // 已登記 12/21 的商品，品名／說明／售價（仍符合 5–100 元）同步到選品清冊
+    {const g=GS.items.find(x=>x.yid===o.id||(o.gid&&x.id===o.gid));if(g){g.name=o.title;if(v.desc.trim())g.desc=o.desc;if(o.mode==='sell'&&o.price>=5&&o.price<=100&&o.price%5===0)g.price=o.price;gsave();drawList2()}}
+    
     okbox.innerHTML='<div class="ok"><span>已更新「'+esc(o.title)+'」。</span><a class="btn sm" href="#mine">回到我的攤位</a></div>';endEdit(true);drawMine();drawList();doneBanner('已更新「'+o.title+'」','修改已存好，地圖和逛賣場會同步更新。');return}endEdit()}
   const it={id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:v.title.trim(),cat:v.cat,mode:v.mode,price:Math.max(0,+v.price||0),seller:v.seller.trim(),dep:v.dep,seat:v.seat,desc:v.desc.trim()||'歡迎到座位看貨。',cond:v.cond,photo,mine:true,sold:false};
   items.push(it);save();
@@ -886,8 +889,10 @@ rf.addEventListener('submit',e=>{
   if(!v.noban||!v.agree)errs.push('請勾選最下面兩個確認項目');
   if(errs.length){rmsg.innerHTML='<div class="ok err">'+errs.map(esc).join('<br>')+'</div>';rmsg.scrollIntoView({block:'nearest'});return}
   const it={id:R.edit||'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),co:v.co,code,owner:v.owner.trim(),dept:(v.dept||'').trim(),name:v.name.trim(),cat:R.cat,size:R.size,base:R.base,catOther:(document.getElementById('rother')?.value||'').trim(),cond:v.cond,func,price:+rprice.value,co2,co2src:off?document.getElementById('coffs').value.trim():'',desc:(v.desc||'').trim(),uns:v.uns||'return',t:Date.now()};
-  const old=R.edit&&GS.items.find(i=>i.id===R.edit);if(old){it.yid=old.yid;it.result=old.result}
-  if(R.forced)it.by='admin';if(R.link){it.yid=R.link;const y=items.find(x=>x.id===R.link);if(y){y.state='group';y.gid=it.id;y.forced=R.forced||!!y.forced;save();drawMine();drawList()}}
+  const old=R.edit&&GS.items.find(i=>i.id===R.edit);if(old){it.yid=old.yid;it.result=old.result;if(old.ownerUid){it.ownerUid=old.ownerUid;it.ownerEmail=old.ownerEmail}}
+  if(R.forced)it.by='admin';if(R.link){it.yid=R.link;const y=items.find(x=>x.id===R.link);if(y){y.state='group';y.gid=it.id;y.forced=R.forced||!!y.forced;if(y.sellerUid){it.ownerUid=y.sellerUid;it.ownerEmail=y.sellerEmail||''}save();drawMine();drawList()}}
+  // 清冊改了品名／售價／說明，地圖上的攤位商品也跟著改
+  else if(it.yid){const y=items.find(x=>x.id===it.yid);if(y&&(y.title!==it.name||y.price!==it.price||(it.desc&&y.desc!==it.desc))){y.title=it.name;y.price=it.price;if(it.desc)y.desc=it.desc;save();drawMine();drawList();if(st.seat||st.dep)render()}}
   if(!it.yid&&it.uns==='stall')it.uns='return';
   const wasEdit=!!R.edit,byAdmin=R.forced||(wasEdit&&ADMIN);GS.items=GS.items.filter(i=>i.id!==it.id).concat(it);gsave();
   const msg=(wasEdit?'已更新':'已登記')+' '+it.code+'「'+it.name+'」';

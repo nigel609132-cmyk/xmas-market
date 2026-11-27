@@ -67,7 +67,7 @@ service cloud.firestore {
     // 12/21 集團好物登記：登入可看（編號要用）；本人或管理員可改
     match /group/{id} {
       allow read: if companyUser();
-      allow create: if companyUser() && request.resource.data.ownerUid == me();
+      allow create: if (companyUser() && request.resource.data.ownerUid == me()) || isAdmin();
       allow update: if (companyUser() && resource.data.ownerUid == me() && request.resource.data.ownerUid == me()) || isAdmin();
       allow delete: if (companyUser() && resource.data.ownerUid == me()) || isAdmin();
     }
